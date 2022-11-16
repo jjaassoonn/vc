@@ -5,6 +5,83 @@ noncomputable theory
 
 universe u
 
+namespace localization.at_prime
+
+open_locale big_operators
+
+variables {R : Type u} [comm_ring R] (p : ideal R) [ideal.is_prime p]
+
+lemma mk_is_unit_iff (a : R) (b : p.prime_compl) : is_unit (localization.mk a b) ↔ a ∉ p :=
+{ mp := λ ⟨⟨x, y, hx1, hx2⟩, hx⟩, 
+  begin
+    dsimp at hx,
+    rw hx at hx1 hx2,
+    induction y using localization.induction_on with data,
+    rcases data with ⟨c, d⟩,
+    dsimp at hx1 hx2,
+    rw [←localization.mk_one, localization.mk_mul, localization.mk_eq_mk_iff, 
+      localization.r_iff_exists] at hx1 hx2,
+    obtain ⟨e, he⟩ := hx1,
+    dsimp at he,
+    rw [mul_one, one_mul] at he,
+    intros r,
+    have mem1 : a * c * e ∈ p := ideal.mul_mem_right _ _ (ideal.mul_mem_right _ _ r),
+    rw he at mem1,
+    exact submonoid.mul_mem _ (submonoid.mul_mem _ b.2 d.2) e.2 mem1,
+  end,
+  mpr := λ ha, ⟨⟨localization.mk a b, localization.mk b ⟨a, ha⟩, 
+    by { rw [localization.mk_mul, mul_comm], exact localization.mk_self (b * ⟨a, ha⟩) }, 
+    by { rw [localization.mk_mul, mul_comm], exact localization.mk_self (⟨a, _⟩ * b)}⟩, rfl⟩ }
+
+lemma maximal_ideal_is :
+  local_ring.maximal_ideal (localization.at_prime p) =
+  { carrier := {x | ∃ (a : p) (b : p.prime_compl), x = localization.mk a b},
+    add_mem' := 
+    begin 
+      rintros _ _ ⟨a, b, rfl⟩ ⟨a', b', rfl⟩,
+      rw [localization.add_mk],
+      refine ⟨⟨b * a' + b' * a, _⟩, b*b', rfl⟩,
+      refine submodule.add_mem _ 
+        (ideal.mul_mem_left _ _ a'.2) 
+        (ideal.mul_mem_left _ _ a.2),
+    end,
+    zero_mem' := ⟨0, 1, (localization.mk_zero _).symm⟩,
+    smul_mem' :=
+    begin 
+      rintros c _ ⟨a, b, rfl⟩,
+      induction c using localization.induction_on with data,
+      rcases data with ⟨x, y⟩,
+      dsimp,
+      rw [localization.mk_mul],
+      refine ⟨⟨x * a, ideal.mul_mem_left _ _ a.2⟩, y * b, rfl⟩,
+    end } :=
+begin
+  ext x : 1,
+  induction x using localization.induction_on with data,
+  rcases data with ⟨a, b⟩,
+  dsimp only,
+  rw [local_ring.mem_maximal_ideal, mem_nonunits_iff, mk_is_unit_iff, not_not],
+  split,
+  { intros ha,
+    rw show localization.mk a b = localization.mk a 1 * localization.mk 1 b, 
+      by rw [localization.mk_mul, mul_one, one_mul],
+    refine ideal.mul_mem_right _ _ _,
+    refine ⟨⟨a, ha⟩, 1, rfl⟩, },
+  { rintros ⟨c, d, h⟩,
+    erw [localization.mk_eq_mk_iff, localization.r_iff_exists] at h,
+    obtain ⟨e, he⟩ := h,
+    dsimp at he,
+    have eq0 : (c * b * e : R) ∈ p := ideal.mul_mem_right _ _ (ideal.mul_mem_right _ _ c.2),
+    rw ←he at eq0,
+    obtain h0|h1 := ideal.is_prime.mem_or_mem infer_instance eq0,
+    work_on_goal 2 { exact (e.2 h1).elim },
+    obtain h0|h1 := ideal.is_prime.mem_or_mem infer_instance h0,
+    exact h0,
+    exact (d.2 h1).elim, },
+end
+
+end localization.at_prime
+
 namespace ring_hom
 
 variables (R : Type u) [comm_ring R] [local_ring R]
@@ -144,10 +221,10 @@ begin
     have eq2 := ring_hom.congr_fun hf1 a,
     rw [ring_hom.comp_apply] at eq2,
     change f (localization.mk a 1) = φ a at eq2,
-    obtain ⟨⟨x, y, hxy1, hxy2⟩, hx⟩:= hf2.map_nonunit (localization.mk a 1) (by rwa eq2),
-    rw [units.coe_mk] at hx,
-    intros rid,
-    sorry },
+    have := hf2.map_nonunit (localization.mk a 1) (by rwa eq2),
+    rwa localization.at_prime.mk_is_unit_iff at this, },
+  have ineq2 : 𝔪 ≤ p,
+  { have := localization.at_prime.local_ring p, },
   sorry
 end
 
