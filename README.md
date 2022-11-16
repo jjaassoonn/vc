@@ -5,3 +5,5 @@ This repo is dedicated to show valuative criterion for universal-closedness, sep
 ## Points of Schemes
 
 ## Universal closedness
+
+![](https://img.shields.io/bower/l/mi?style=flat-square)

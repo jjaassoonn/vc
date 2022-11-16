@@ -13,7 +13,7 @@ section target
 
 variables {R} {A : Type u} [comm_ring A] (φ : A →+* R)
 
-@[simps] def factors_of_target_local_ring : 
+@[simps] def factor_through_target_local_ring : 
   localization.at_prime (ideal.comap φ (local_ring.maximal_ideal _)) →+* R :=
 { to_fun := λ x, x.lift_on (λ a b, φ a * (begin 
     have := (local_ring.mem_maximal_ideal (φ b)).not.mp _,
@@ -91,8 +91,8 @@ variables {R} {A : Type u} [comm_ring A] (φ : A →+* R)
       mul_comm (φ a), mul_comm (φ a'), add_comm],
   end }
 
-lemma is_local.factors_of_target_local_ring :
-  is_local_ring_hom (factors_of_target_local_ring φ) :=
+lemma is_local.factor_through_target_local_ring :
+  is_local_ring_hom (factor_through_target_local_ring φ) :=
 { map_nonunit := localization.ind 
   begin 
     rintros ⟨a, b⟩ h,
@@ -112,6 +112,44 @@ lemma is_local.factors_of_target_local_ring :
       convert localization.mk_self _,
       refl, },
   end }
+
+@[simp] lemma target_local_ring_eq_comp_factors :
+  (factor_through_target_local_ring φ).comp
+    (algebra_map A (localization.at_prime (ideal.comap φ (local_ring.maximal_ideal _)))) = φ :=
+begin 
+  ext a,
+  rw [ring_hom.comp_apply],
+  change φ.factor_through_target_local_ring (localization.mk a 1) = _,
+  rw [factor_through_target_local_ring_apply, localization.lift_on_mk],
+  rw [units.inv_eq_coe_inv, mul_comm, units.inv_mul_eq_iff_eq_mul],
+  change φ a = φ 1 * _,
+  rw [map_one, one_mul]
+end
+
+lemma factor_through_target_local_ring_uniq (p : ideal A) [p.is_prime]
+  (f : localization.at_prime p →+* R) 
+  (hf1 : f.comp (algebra_map A (localization.at_prime p)) = φ)
+  (hf2 : is_local_ring_hom f) :
+  ∃ (eq1 : p = ideal.comap φ (local_ring.maximal_ideal _)),
+    (f.comp $ localization.local_ring_hom _ _ (ring_hom.id A) $
+      by rw [ideal.comap_id, eq1] : localization.at_prime (ideal.comap φ (local_ring.maximal_ideal _)) →+* R) = 
+    φ.factor_through_target_local_ring := 
+begin 
+  let 𝔪 := ideal.comap φ (local_ring.maximal_ideal _),
+  have ineq1 : p ≤ 𝔪,
+  { intros a ha,
+    rw [ideal.mem_comap, local_ring.mem_maximal_ideal, mem_nonunits_iff],
+    
+    contrapose! ha,
+    have eq2 := ring_hom.congr_fun hf1 a,
+    rw [ring_hom.comp_apply] at eq2,
+    change f (localization.mk a 1) = φ a at eq2,
+    obtain ⟨⟨x, y, hxy1, hxy2⟩, hx⟩:= hf2.map_nonunit (localization.mk a 1) (by rwa eq2),
+    rw [units.coe_mk] at hx,
+    intros rid,
+    sorry },
+  sorry
+end
 
 end target
 
