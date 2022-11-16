@@ -13,7 +13,7 @@ section target
 
 variables {R} {A : Type u} [comm_ring A] (φ : A →+* R)
 
-def factors_of_target_local_ring : 
+@[simps] def factors_of_target_local_ring : 
   localization.at_prime (ideal.comap φ (local_ring.maximal_ideal _)) →+* R :=
 { to_fun := λ x, x.lift_on (λ a b, φ a * (begin 
     have := (local_ring.mem_maximal_ideal (φ b)).not.mp _,
@@ -89,6 +89,28 @@ def factors_of_target_local_ring :
       is_unit.coe_inv_mul, one_mul, mul_assoc, mul_comm (φ b),
       ←mul_assoc ↑(h3.unit)⁻¹, is_unit.coe_inv_mul, one_mul,
       mul_comm (φ a), mul_comm (φ a'), add_comm],
+  end }
+
+lemma is_local.factors_of_target_local_ring :
+  is_local_ring_hom (factors_of_target_local_ring φ) :=
+{ map_nonunit := localization.ind 
+  begin 
+    rintros ⟨a, b⟩ h,
+    dsimp at h ⊢,
+    rw [localization.lift_on_mk] at h,
+    generalize_proofs h0 h1 at h,
+    have ha : is_unit (φ a),
+    { have := h.mul h1,
+      rw [mul_assoc] at this,
+      erw [units.inv_mul] at this,
+      rwa [mul_one] at this, },
+    have ha' := (local_ring.mem_maximal_ideal (φ a)).not.mpr (λ r, r ha),
+    have ha'' : a ∉ ideal.comap φ (local_ring.maximal_ideal R),
+    { rwa ideal.mem_comap, },
+    refine ⟨⟨localization.mk a b, localization.mk b ⟨a, ha''⟩, _, _⟩, rfl⟩;
+    { rw [localization.mk_mul, mul_comm],
+      convert localization.mk_self _,
+      refl, },
   end }
 
 end target
