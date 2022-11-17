@@ -25,10 +25,41 @@ variable (f : Spec_obj (CommRing.of R) ⟶ X)
 instance : local_ring (CommRing.of R) := 
 show local_ring R, from infer_instance
 
-@[ext] structure point_local_ring_hom_pair :=
+structure point_local_ring_hom_pair :=
 (pt : X.carrier)
 (ring_hom_ : X.presheaf.stalk pt →+* R)
 (is_local_ring_hom : is_local_ring_hom ring_hom_)
+
+@[ext] lemma point_local_ring_hom_pair_ext (P Q : point_local_ring_hom_pair X R)
+  (hpt : P.pt = Q.pt)
+  (hhom : P.ring_hom_.comp 
+  (X.presheaf.stalk_specializes $ by { rw hpt, }) = Q.ring_hom_) :
+  P = Q :=
+begin 
+  rcases P with ⟨P, fP, hfP⟩,
+  rcases Q with ⟨Q, fQ, hfQ⟩,
+  dsimp at hpt,
+  subst hpt,
+  dsimp at hhom,
+  simp_rw ←hhom,
+  refine ⟨rfl, heq_of_eq _⟩,
+  convert_to fP = fP.comp (ring_hom.id _),
+  swap,
+  { rw ring_hom.comp_id, },
+  congr' 1,
+  dunfold stalk_specializes,
+  apply limits.colimit.hom_ext,
+  intros j,
+  rw limits.colimit.ι_desc,
+  dsimp only,
+  ext x : 1,
+  rw [comp_apply, ring_hom.id_apply],
+  congr,
+  change _ = op (unop j),
+  rw op_inj_iff,
+  ext : 1,
+  refl,
+end
 
 section
 
