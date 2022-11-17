@@ -245,6 +245,7 @@ begin
   rw [map_one, one_mul]
 end
 
+-- 01J6, first sentence in proof
 lemma factor_through_target_local_ring_uniq (p : ideal A) [p.is_prime]
   (f : localization.at_prime p →+* R) 
   (hf1 : f.comp (algebra_map A (localization.at_prime p)) = φ)
@@ -297,7 +298,30 @@ begin
     exact h0, exact (b.2 h1).elim, exact (c.2 h2).elim, },
   have ideal_eq : p = 𝔪 := le_antisymm ineq1 ineq2,
   refine ⟨ideal_eq, _⟩,
-  sorry
+  ext x : 1,
+  induction x using localization.induction_on with data,
+  rcases data with ⟨a, b⟩,
+  rw [factor_through_target_local_ring_apply, localization.lift_on_mk,
+    ring_hom.comp_apply, localization.local_ring_hom, localization.mk_eq_mk',
+    is_localization.map_mk', ←localization.mk_eq_mk'],
+  dsimp,
+  generalize_proofs h0 h1 h2,
+  rw show localization.mk a ⟨b, h1⟩ = localization.mk a 1 * localization.mk 1 ⟨b, h1⟩, from _,
+  work_on_goal 2 
+  { rw [localization.mk_mul, mul_one, one_mul], },
+  rw [map_mul],
+  change (f.comp (algebra_map A (localization.at_prime p))) _ * _ = _,
+  rw hf1, congr' 1,
+  apply units.eq_inv_of_mul_eq_one_left,
+  change φ b * f _ = 1,
+  simp_rw ←hf1,
+  rw [ring_hom.comp_apply, ←map_mul],
+  convert_to f 1 = 1,
+  { congr' 1,
+    change localization.mk ↑b 1 * _ = 1,
+    rw [localization.mk_mul, mul_one, one_mul],
+    exact localization.mk_self (⟨_, h1⟩ : ideal.prime_compl _), },
+  rw map_one,
 end
 
 end target
