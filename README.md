@@ -22,4 +22,6 @@ $$
 
 then $\mathfrak p = \phi^{-1}\mathfrak m$ and $f = \phi'$. This fact is recorded in [`about_local_rings.lean`](src/about_local_rings.lean#L235).
 
-![](https://img.shields.io/bower/l/mi?style=flat-square)
+<div align='center'>
+
+![license](https://img.shields.io/bower/l/mi) ![line count](https://img.shields.io/tokei/lines/github/jjaassoonn/vc)
