@@ -121,7 +121,21 @@ def Spec_local_ring_to_AffineScheme :
 (Spec_local_ring_to_AffineScheme_aux X R).trans 
 { to_fun := Spec_local_ring_to_AffineScheme_to_fun_aux X R,
   inv_fun := Spec_local_ring_to_AffineScheme_inv_fun_aux X R,
-  left_inv := sorry,
+  left_inv := λ f, 
+  begin 
+    ext x : 1,
+    rw [Spec_local_ring_to_AffineScheme_inv_fun_aux_apply],
+    rw [Spec_local_ring_to_AffineScheme_to_fun_aux],
+    dsimp only,
+    rw [ring_hom.comp_apply, ring_hom.comp_apply, iso.inv_hom_id_apply,
+      ring_hom.factor_through_target_local_ring_apply, localization.local_ring_hom,
+      localization.mk_eq_mk', is_localization.map_mk', ←localization.mk_eq_mk',
+      ring_hom.id_apply],
+    simp_rw ring_hom.id_apply,
+    rw [localization.lift_on_mk, units.inv_eq_coe_inv, units.mul_inv_eq_iff_eq_mul],
+    change f x = f x * f 1,
+    rw [map_one, mul_one],
+  end,
   right_inv := sorry }
 
 end affine_cases
