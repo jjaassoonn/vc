@@ -88,27 +88,39 @@ from
     inv_hom_id' := α.hom_inv_id }) ≪≫
 structure_sheaf.stalk_iso _ _
 
+@[simps] def Spec_local_ring_to_AffineScheme_to_fun_aux (f : CommRing.of (Γ.obj (op X)) ⟶ CommRing.of R) :
+  point_local_ring_hom_pair X R :=
+let pt := X.iso_Spec.inv.1.base ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩ in 
+{ pt := pt,
+  ring_hom_ :=
+  (ring_hom.factor_through_target_local_ring f).comp $ 
+    ring_hom.comp (localization.local_ring_hom _ _ (ring_hom.id _) 
+    begin 
+      erw congr_fun (congr_arg (λ (f : Scheme.hom _ _), f.1.base) X.iso_Spec.inv_hom_id) _,
+      refl,
+    end) (AffineScheme_stalk X pt).hom,
+  is_local_ring_hom := 
+  @@is_local_ring_hom_comp _ _ _ _ _ 
+    (ring_hom.is_local.factor_through_target_local_ring _) $ 
+    @@is_local_ring_hom_comp _ _ _ _ _ 
+    (localization.is_local_ring_hom_local_ring_hom _ _ _ _) $
+    @@is_local_ring_hom_of_is_iso (AffineScheme_stalk X pt).hom _ }
+  
+def Spec_local_ring_to_AffineScheme_inv_fun_aux (P : point_local_ring_hom_pair X R) :
+  CommRing.of (Γ.obj $ op X) ⟶ CommRing.of R :=
+CommRing.of_hom $ P.ring_hom_.comp $ (AffineScheme_stalk X P.pt).inv.comp $ 
+    @@algebra_map _ _ _ _ $ by dsimp; apply_instance
+
+lemma Spec_local_ring_to_AffineScheme_inv_fun_aux_apply (P : point_local_ring_hom_pair X R) (x) :
+  Spec_local_ring_to_AffineScheme_inv_fun_aux X R P x =
+  P.ring_hom_ ((AffineScheme_stalk X P.pt).inv $ localization.mk x 1) :=
+rfl
+
 def Spec_local_ring_to_AffineScheme :
   ((Spec_obj $ CommRing.of R) ⟶ X) ≃ point_local_ring_hom_pair X R :=
 (Spec_local_ring_to_AffineScheme_aux X R).trans 
-{ to_fun := λ f,
-  let pt := X.iso_Spec.inv.1.base ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩ in 
-  { pt := pt,
-    ring_hom_ :=
-    (ring_hom.factor_through_target_local_ring f).comp $ 
-      ring_hom.comp (localization.local_ring_hom _ _ (ring_hom.id _) 
-      begin 
-        erw congr_fun (congr_arg (λ (f : Scheme.hom _ _), f.1.base) X.iso_Spec.inv_hom_id) _,
-        refl,
-      end) (AffineScheme_stalk X pt).hom,
-    is_local_ring_hom := 
-    @@is_local_ring_hom_comp _ _ _ _ _ 
-      (ring_hom.is_local.factor_through_target_local_ring _) $ 
-      @@is_local_ring_hom_comp _ _ _ _ _ 
-      (localization.is_local_ring_hom_local_ring_hom _ _ _ _) $
-      @@is_local_ring_hom_of_is_iso (AffineScheme_stalk X pt).hom _ },
-  inv_fun := λ P, CommRing.of_hom $ P.ring_hom_.comp $ (AffineScheme_stalk X P.pt).inv.comp $ 
-  @@algebra_map _ _ _ _ $ by dsimp; apply_instance,
+{ to_fun := Spec_local_ring_to_AffineScheme_to_fun_aux X R,
+  inv_fun := Spec_local_ring_to_AffineScheme_inv_fun_aux X R,
   left_inv := sorry,
   right_inv := sorry }
 
