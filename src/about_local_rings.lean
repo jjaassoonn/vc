@@ -33,9 +33,9 @@ lemma mk_is_unit_iff (a : R) (b : p.prime_compl) : is_unit (localization.mk a b)
     by { rw [localization.mk_mul, mul_comm], exact localization.mk_self (b * ⟨a, ha⟩) }, 
     by { rw [localization.mk_mul, mul_comm], exact localization.mk_self (⟨a, _⟩ * b)}⟩, rfl⟩ }
 
-lemma maximal_ideal_is :
-  local_ring.maximal_ideal (localization.at_prime p) =
-  { carrier := {x | ∃ (a : p) (b : p.prime_compl), x = localization.mk a b},
+@[simps] def concrete_description_of_ideal_map (m : ideal R) :
+  ideal (localization.at_prime p) :=
+{ carrier := {x | ∃ (a : m) (b : p.prime_compl), x = localization.mk a b},
     add_mem' := 
     begin 
       rintros _ _ ⟨a, b, rfl⟩ ⟨a', b', rfl⟩,
@@ -54,7 +54,44 @@ lemma maximal_ideal_is :
       dsimp,
       rw [localization.mk_mul],
       refine ⟨⟨x * a, ideal.mul_mem_left _ _ a.2⟩, y * b, rfl⟩,
-    end } :=
+    end }
+
+lemma ideal_map_is (m : ideal R) :
+  concrete_description_of_ideal_map p m = 
+  m.map (algebra_map R (localization.at_prime p)) :=
+have aux1 : ∀ (x : localization.at_prime p), 
+    x ∈ ideal.map (algebra_map R (localization.at_prime p)) m →
+    ∃ (a : m) (b: p.prime_compl), x = localization.mk a b,
+begin
+  rintros x h, 
+  refine submodule.span_induction h _ _ _ _,
+  { rintros _ ⟨y, hy, rfl⟩, refine ⟨⟨y, hy⟩, 1, rfl⟩, },
+  { refine ⟨0, 1, (localization.mk_zero _).symm⟩, },
+  { rintros _ _ ⟨a, b, rfl⟩ ⟨a', b', rfl⟩,
+    refine ⟨⟨b * a' + b' * a, submodule.add_mem _ (ideal.mul_mem_left _ _ a'.2) (ideal.mul_mem_left _ _ a.2) ⟩, b * b', _⟩,
+    rw [localization.add_mk],
+    refl, },
+  { rintros x _ ⟨a, b, rfl⟩,
+    induction x using localization.induction_on with data,
+    rcases data with ⟨c, d⟩,
+    refine ⟨⟨c * a, ideal.mul_mem_left _ _ a.2⟩, d * b, _⟩,
+    dsimp,
+    rw [localization.mk_mul], }
+end,
+begin 
+  ext : 1, split,
+  { rintros ⟨a, b, rfl⟩, 
+    rw show (localization.mk a b : localization.at_prime p) = 
+      localization.mk a 1 * localization.mk 1 b, from _,
+    refine ideal.mul_mem_right _ _ (submodule.subset_span _),
+    refine ⟨a, a.2, rfl⟩,
+    rw [localization.mk_mul, mul_one, one_mul], },
+  { exact aux1 _, }
+end
+
+lemma maximal_ideal_is :
+  local_ring.maximal_ideal (localization.at_prime p) =
+  concrete_description_of_ideal_map p p :=
 begin
   ext x : 1,
   induction x using localization.induction_on with data,
@@ -83,36 +120,7 @@ end
 lemma maximal_ideal_is' :
   local_ring.maximal_ideal (localization.at_prime p) =
   p.map (algebra_map R (localization.at_prime p)) := 
-(maximal_ideal_is p).trans $ 
-have aux1 : ∀ (x : localization.at_prime p), 
-    x ∈ ideal.map (algebra_map R (localization.at_prime p)) p →
-    ∃ (a : p) (b : p.prime_compl), x = localization.mk a b,
-begin
-  rintros x h, 
-  refine submodule.span_induction h _ _ _ _,
-  { rintros _ ⟨y, hy, rfl⟩, refine ⟨⟨y, hy⟩, 1, rfl⟩, },
-  { refine ⟨0, 1, (localization.mk_zero _).symm⟩, },
-  { rintros _ _ ⟨a, b, rfl⟩ ⟨a', b', rfl⟩,
-    refine ⟨⟨b * a' + b' * a, submodule.add_mem _ (ideal.mul_mem_left _ _ a'.2) (ideal.mul_mem_left _ _ a.2) ⟩, b * b', _⟩,
-    rw [localization.add_mk],
-    refl, },
-  { rintros x _ ⟨a, b, rfl⟩,
-    induction x using localization.induction_on with data,
-    rcases data with ⟨c, d⟩,
-    refine ⟨⟨c * a, ideal.mul_mem_left _ _ a.2⟩, d * b, _⟩,
-    dsimp,
-    rw [localization.mk_mul], }
-end,
-begin 
-  ext : 1, split,
-  { rintros ⟨a, b, rfl⟩, 
-    rw show (localization.mk a b : localization.at_prime p) = 
-      localization.mk a 1 * localization.mk 1 b, from _,
-    refine ideal.mul_mem_right _ _ (submodule.subset_span _),
-    refine ⟨a, a.2, rfl⟩,
-    rw [localization.mk_mul, mul_one, one_mul], },
-  { exact aux1 _, }
-end
+(maximal_ideal_is p).trans $ ideal_map_is _ _
 
 end localization.at_prime
 
@@ -256,28 +264,11 @@ begin
     change f (localization.mk a 1) = φ a at eq2,
     have := hf2.map_nonunit (localization.mk a 1) (by rwa eq2),
     rwa localization.at_prime.mk_is_unit_iff at this, },
-  have ineq2 := ideal.map_mono ineq1,
-  rw ←localization.at_prime.maximal_ideal_is' p at ineq2,
-  have ideal_eq := ideal.is_maximal.eq_of_le (local_ring.maximal_ideal.is_maximal _) _ ineq2,
+  have ineq2' := ideal.map_mono ineq1,
+  rw ←localization.at_prime.maximal_ideal_is' p at ineq2',
+  have ideal_eq' := ideal.is_maximal.eq_of_le (local_ring.maximal_ideal.is_maximal _) _ ineq2',
   swap,
-  { have aux1 : ∀ (x : localization.at_prime p), 
-      x ∈ ideal.map (algebra_map A (localization.at_prime p)) 𝔪 →
-      ∃ (a : 𝔪) (b : p.prime_compl), x = localization.mk a b,
-    { rintros x h, 
-      refine submodule.span_induction h _ _ _ _,
-      { rintros _ ⟨y, hy, rfl⟩, refine ⟨⟨y, hy⟩, 1, rfl⟩, },
-      { refine ⟨0, 1, (localization.mk_zero _).symm⟩, },
-      { rintros _ _ ⟨a, b, rfl⟩ ⟨a', b', rfl⟩,
-        refine ⟨⟨b * a' + b' * a, submodule.add_mem _ (ideal.mul_mem_left _ _ a'.2) (ideal.mul_mem_left _ _ a.2) ⟩, b * b', _⟩,
-        rw [localization.add_mk],
-        refl, },
-      { rintros x _ ⟨a, b, rfl⟩,
-        induction x using localization.induction_on with data,
-        rcases data with ⟨c, d⟩,
-        refine ⟨⟨c * a, ideal.mul_mem_left _ _ a.2⟩, d * b, _⟩,
-        dsimp,
-        rw [localization.mk_mul], } },
-    intros rid,
+  { intros rid,
     rw [ideal.eq_top_iff_one] at rid,
     have rid' : f 1 ∈ ideal.map φ 𝔪,
     { rw [←hf1, ←ideal.map_map],
@@ -287,6 +278,25 @@ begin
     rw [←ideal.eq_top_iff_one] at rid'',
     refine (_ : ideal.is_prime _).ne_top rid'',
     exact ideal.is_maximal.is_prime' (local_ring.maximal_ideal R) },
+  have ineq2 : 𝔪 ≤ p,
+  { intros m hm,
+    rw [localization.at_prime.maximal_ideal_is'] at ideal_eq',
+    have mem1 : (localization.mk m 1 : localization.at_prime p) ∈ 
+      ideal.map (algebra_map A (localization.at_prime p)) 𝔪,
+    { rw ←localization.at_prime.ideal_map_is, exact ⟨⟨m, hm⟩, 1, rfl⟩, },
+    rw [←ideal_eq', ←localization.at_prime.ideal_map_is] at mem1,
+    obtain ⟨a, b, eq0⟩ := mem1,
+    rw [localization.mk_eq_mk_iff, localization.r_iff_exists] at eq0,
+    obtain ⟨c, eq0⟩ := eq0,
+    dsimp at eq0,
+    rw [mul_one] at eq0,
+    have mem1 : (a * c : A) ∈ p := ideal.mul_mem_right _ _ a.2,
+    rw [←eq0] at mem1,
+    obtain h0|h2 := ideal.is_prime.mem_or_mem infer_instance mem1,
+    obtain h0|h1 := ideal.is_prime.mem_or_mem infer_instance h0,
+    exact h0, exact (b.2 h1).elim, exact (c.2 h2).elim, },
+  have ideal_eq : p = 𝔪 := le_antisymm ineq1 ineq2,
+  refine ⟨ideal_eq, _⟩,
   sorry
 end
 
