@@ -25,8 +25,8 @@ equiv.trans
   inv_fun := λ α, α ≫ Y.iso_Spec.inv,
   left_inv := λ α, by simp_rw [category.assoc, iso.hom_inv_id, category.comp_id],
   right_inv := λ α, by simp_rw [category.assoc, iso.inv_hom_id, category.comp_id] } $ 
-(Γ_Spec.adjunction.hom_equiv X (op $ Γ.obj $ op Y)).symm.trans 
-(op_equiv _ _).symm
+(Γ_Spec.adjunction.hom_equiv X (op $ Γ.obj $ op Y)).symm.trans $
+op_equiv _ _
 
 end Scheme.hom
 
