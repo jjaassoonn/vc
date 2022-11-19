@@ -327,3 +327,35 @@ end
 end target
 
 end ring_hom
+
+namespace local_ring
+
+variables (R S : Type u) [comm_ring R] [comm_ring S] [local_ring S] (f : R ≃+* S)
+
+instance of_equiv : local_ring R :=
+@@local_ring.of_is_unit_or_is_unit_of_is_unit_add _
+  (⟨⟨f.symm nontrivial.exists_pair_ne.some, 
+    f.symm nontrivial.exists_pair_ne.some_spec.some, 
+    λ r, nontrivial.exists_pair_ne.some_spec.some_spec $ f.symm.injective r⟩⟩ : nontrivial R) $ λ a b h,
+begin 
+  have h' : is_unit (f (a + b)) := f.to_ring_hom.is_unit_map h,
+  rw [map_add] at h',
+  obtain h''|h'' := local_ring.is_unit_or_is_unit_of_is_unit_add h',
+  left,
+  convert f.symm.to_ring_hom.is_unit_map h'',
+  erw [equiv.symm_apply_apply],
+  right,
+  convert f.symm.to_ring_hom.is_unit_map h'',
+  erw [equiv.symm_apply_apply],
+end
+-- begin 
+--   have ha' : f a ∈ nonunits S,
+--   { intros h, },
+-- end
+-- suffices f.symm (f a + f b) ∈ nonunits R, by simpa only [map_add, ring_equiv.symm_apply_apply], 
+-- suffices f a + f b ∈ nonunits S, from λ r,
+-- begin 
+--   have := f.symm.to_ring_hom.is_unit_map,
+-- end, _
+
+end local_ring
