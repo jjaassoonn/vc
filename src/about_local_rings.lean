@@ -332,7 +332,7 @@ namespace local_ring
 
 variables (R S : Type u) [comm_ring R] [comm_ring S] [local_ring S] (f : R ≃+* S)
 
-instance of_equiv : local_ring R :=
+def of_equiv : local_ring R :=
 @@local_ring.of_is_unit_or_is_unit_of_is_unit_add _
   (⟨⟨f.symm nontrivial.exists_pair_ne.some, 
     f.symm nontrivial.exists_pair_ne.some_spec.some, 
