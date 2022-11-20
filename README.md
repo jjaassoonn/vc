@@ -29,7 +29,7 @@ If we apply this to an affine scheme $X$, then $$
 \mathrm{Hom}(\mathrm{Spec} R, X)\cong \mathrm{Hom}(\Gamma(X), R)\cong\{(\mathfrak p \in \mathrm{Spec}\,\Gamma(X), \Gamma(X)_{\mathfrak p}\to R)\}\cong\{(x \in X, \mathcal{O}_{X, x}\to R)\}.
 $$
 
-For an arbitrary scheme $X$, for any $\alpha : \mathrm{Spec} R\to X$, $\alpha$ is uniquely determined by $\mathrm{Spec} R \to V$ where $V$ is an affine subscheme of $X$ containing $\alpha(\mathfrak m)$  which in turn is uniquely determined by, according to the bijection in the affine cases by a pair $(x \in V, \mathcal{O}_{V, x}\to R)$; but since $\mathcal O_{V, x}\cong \mathcal O_{X, x}$, any pair $(x \in V, \mathcal O_{V, x}\to R)$ is uniquely determined by an $(x \in X, \mathcal O_{X, x})$. Hence, we have proved that scheme morphisms $\mathrm{Spec} R\to X$ is uniquely determined by $(x\in X, \mathcal O_{X, x}\to R)$. This is [01J6](https://stacks.math.columbia.edu/tag/01J6) from stack project.
+For an arbitrary scheme $X$, for any $\alpha : \mathrm{Spec} R\to X$, $\alpha$ is uniquely determined by $\mathrm{Spec} R \to V$ where $V$ is an affine subscheme of $X$ containing $\alpha(\mathfrak m)$  which in turn is uniquely determined by, according to the bijection in the affine cases by a pair $(x \in V, \mathcal{O}_{V, x}\to R)$; but since $\mathcal{O}_{V, x}\cong \mathcal{O}_{X, x}$, any pair $(x \in V, \mathcal{O}_{V, x}\to R)$ is uniquely determined by an $(x \in X, \mathcal{O}_{X, x})$. Hence, we have proved that scheme morphisms $\mathrm{Spec} R\to X$ is uniquely determined by $(x\in X, \mathcal O_{X, x}\to R)$. This is [01J6](https://stacks.math.columbia.edu/tag/01J6) from stack project.
 
 <div align='center'>
 
