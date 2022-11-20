@@ -1,5 +1,6 @@
 import ring_theory.ideal.local_ring
 import ring_theory.localization.at_prime
+import algebraic_geometry.prime_spectrum.basic
 
 noncomputable theory
 
@@ -124,6 +125,32 @@ lemma maximal_ideal_is' :
 
 end localization.at_prime
 
+namespace local_ring
+
+variables (A R : Type u) [comm_ring A] [comm_ring R] [local_ring R]
+
+structure point_local_ring_hom_pair :=
+(pt : prime_spectrum A)
+(ring_hom_ : localization.at_prime pt.as_ideal →+* R)
+[is_local_ring_hom_ : is_local_ring_hom ring_hom_]
+
+attribute [instance] point_local_ring_hom_pair.is_local_ring_hom_
+
+@[ext] lemma point_local_ring_hom_pair_ext (α β : point_local_ring_hom_pair A R)
+  (h1 : α.pt = β.pt) 
+  (h2 : α.ring_hom_.comp (localization.local_ring_hom _ _ (ring_hom.id _) $ by rw [ideal.comap_id, h1]) = β.ring_hom_) :
+  α = β :=
+begin 
+  obtain ⟨pt, f, h⟩ := α,
+  obtain ⟨pt', f', h'⟩ := β,
+  dsimp at *,
+  subst h1,
+  congr,
+  rw [←h2, localization.local_ring_hom_id, ring_hom.comp_id],
+end
+
+end local_ring
+
 namespace ring_hom
 
 variables (R : Type u) [comm_ring R] [local_ring R]
@@ -210,7 +237,7 @@ variables {R} {A : Type u} [comm_ring A] (φ : A →+* R)
       mul_comm (φ a), mul_comm (φ a'), add_comm],
   end }
 
-lemma is_local.factor_through_target_local_ring :
+instance is_local.factor_through_target_local_ring :
   is_local_ring_hom (factor_through_target_local_ring φ) :=
 { map_nonunit := localization.ind 
   begin 
@@ -324,6 +351,48 @@ begin
   rw map_one,
 end
 
+@[simps] def target_local_ring_equiv :
+  (A →+* R) ≃ local_ring.point_local_ring_hom_pair A R :=
+{ to_fun := λ φ, 
+  { pt := ⟨(local_ring.maximal_ideal _).comap φ, infer_instance⟩,
+    ring_hom_ := φ.factor_through_target_local_ring,
+    is_local_ring_hom_ := infer_instance },
+  inv_fun := λ P, P.ring_hom_.comp $ algebra_map A _,
+  left_inv := target_local_ring_eq_comp_factors,
+  right_inv := λ P,
+  begin 
+    obtain ⟨x, f⟩ := P,
+    resetI,
+    ext : 1,
+    work_on_goal 2
+    { ext z : 2,
+      dsimp only,
+      rw [subtype.coe_mk, ideal.mem_comap, local_ring.mem_maximal_ideal, mem_nonunits_iff],
+      split,
+      { contrapose!, rintros rid,
+        rwa [ring_hom.comp_apply, show algebra_map A (localization.at_prime x.as_ideal) z = localization.mk z 1, from rfl,
+          is_unit_map_iff, localization.at_prime.mk_is_unit_iff] },
+      { contrapose!, rintros rid,
+        rwa [ring_hom.comp_apply, show algebra_map A (localization.at_prime x.as_ideal) z = localization.mk z 1, from rfl,
+          is_unit_map_iff, localization.at_prime.mk_is_unit_iff] at rid } },
+    { ext z : 1,
+      induction z using localization.induction_on with data,
+      rcases data with ⟨a, b⟩,
+      dsimp only at *,
+      rw [ring_hom.comp_apply], 
+      simp_rw [localization.mk_eq_mk', localization.local_ring_hom_mk', ←localization.mk_eq_mk',
+        ring_hom.factor_through_target_local_ring_apply, localization.lift_on_mk, ring_hom.id_apply,
+        ring_hom.comp_apply, show algebra_map A (localization.at_prime x.as_ideal) a = localization.mk a 1, from rfl],
+      rw [units.inv_eq_coe_inv],
+      symmetry,
+      rw [units.eq_mul_inv_iff_mul_eq],
+      change _ * f (localization.mk b 1) = _,
+      rw [←map_mul, localization.mk_mul, mul_one],
+      congr' 1,
+      rw [localization.mk_eq_mk_iff, localization.r_iff_exists],
+      exact ⟨1, by simp only [subtype.coe_mk, submonoid.coe_one, mul_one]⟩, }
+  end }
+
 end target
 
 end ring_hom
@@ -348,14 +417,5 @@ begin
   convert f.symm.to_ring_hom.is_unit_map h'',
   erw [equiv.symm_apply_apply],
 end
--- begin 
---   have ha' : f a ∈ nonunits S,
---   { intros h, },
--- end
--- suffices f.symm (f a + f b) ∈ nonunits R, by simpa only [map_add, ring_equiv.symm_apply_apply], 
--- suffices f a + f b ∈ nonunits S, from λ r,
--- begin 
---   have := f.symm.to_ring_hom.is_unit_map,
--- end, _
 
 end local_ring
