@@ -298,6 +298,28 @@ def Spec_local_ring_to_AffineScheme :
 
 end affine_cases
 
+section nonaffine_cases
+
+instance spec_is_affine (S : Type u) [comm_ring S] : is_affine $ Spec_obj (CommRing.of S) :=
+algebraic_geometry.Spec_is_affine (op _)
+
+instance spec_is_affine' (S : CommRing) : is_affine $ Spec_obj S :=
+algebraic_geometry.Spec_is_affine (op _)
+
+variables {X R} (P : point_local_ring_hom_pair X R) {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
+
+def point_local_ring_hom_pair_in_affine_open :
+  point_local_ring_hom_pair (Spec_obj (X.presheaf.obj $ op U)) R := 
+{ pt := (show P.pt ∈ set.range (hU.from_Spec.1.base), from hU.from_Spec_range.symm ▸ mem_U).some,
+  ring_hom_ := sorry,
+  is_local_ring_hom := sorry }
+
+def Spec_local_ring_to_Schme_of_affine_open : Spec_obj (CommRing.of R) ⟶ X :=
+(Spec_local_ring_to_AffineScheme (Spec_obj $ X.presheaf.obj $ op U) R).symm 
+  (point_local_ring_hom_pair_in_affine_open P hU mem_U) ≫ hU.from_Spec
+
+end nonaffine_cases
+
 end Spec_local_ring_to_Scheme_auxs
 
 -- 01J6
