@@ -29,7 +29,9 @@ show local_ring R, from infer_instance
 structure point_local_ring_hom_pair :=
 (pt : X.carrier)
 (ring_hom_ : X.presheaf.stalk pt →+* R)
-(is_local_ring_hom : is_local_ring_hom ring_hom_)
+[is_local_ring_hom : is_local_ring_hom ring_hom_]
+
+attribute [instance] point_local_ring_hom_pair.is_local_ring_hom
 
 @[ext] lemma point_local_ring_hom_pair_ext (P Q : point_local_ring_hom_pair X R)
   (hpt : P.pt = Q.pt)
@@ -100,31 +102,22 @@ variables [is_affine X]
     { rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, id_apply], },
   end }
 
-lemma AffineScheme_stalk_hom_comp_germ (x : X.carrier) :
-  (AffineScheme_stalk X x).hom.comp (X.presheaf.germ ⟨x, (by change true; exact true.intro : x ∈ has_coe_t_aux.coe ⊤)⟩) = 
-  (@@algebra_map _ _ _ _ $ by dsimp; exactI localization.algebra : Γ.obj (op X) →+* localization.at_prime (X.iso_Spec.hom.1.base x).as_ideal) := 
-begin 
-  dsimp only [AffineScheme_stalk, iso.trans],
-  ext (s : Γ.obj (op X)) : 1,
-  rw ←localization.mk_algebra_map,
-  change _ = localization.mk s 1,
-  simp only [ring_hom.comp_apply, comp_apply],
-  apply_fun (structure_sheaf.stalk_iso _ _).inv,
-  erw iso.hom_inv_id_apply,
-  rw [structure_sheaf.stalk_iso_inv, localization.mk_eq_mk', structure_sheaf.localization_to_stalk_mk'],
-  apply_fun (PresheafedSpace.stalk_map.stalk_iso {hom := X.iso_Spec.hom.val, inv := X.iso_Spec.inv.val, hom_inv_id' := _, inv_hom_id' := _} x).hom,
-  rw [←comp_apply, iso.inv_hom_id, id_apply],
-  dsimp only [PresheafedSpace.stalk_map.stalk_iso, as_iso_hom, PresheafedSpace.stalk_map],
-  rw [←comp_apply, ←category.assoc, stalk_functor_map_germ,
-    category.assoc],
-  erw stalk_pushforward_germ CommRing X.iso_Spec.hom.val.base X.presheaf _ ⟨x, _⟩,
-  sorry,
-end
 
-lemma AffineScheme_stalk_hom_germ_apply (pt : X.carrier) (x) :
-  (AffineScheme_stalk X pt).hom (X.presheaf.germ ⟨pt, (by change true; exact true.intro : pt ∈ has_coe_t_aux.coe ⊤)⟩ x) = 
-  localization.mk x 1 :=
-ring_hom.congr_fun (AffineScheme_stalk_hom_comp_germ X pt) x
+def point_local_ring_hom_pair_equiv :
+  point_local_ring_hom_pair X R ≃
+  local_ring.point_local_ring_hom_pair (Γ.obj $ op X) R :=
+{ to_fun := λ P, 
+  { pt := X.iso_Spec.hom.1.base P.pt,
+    ring_hom_ := P.ring_hom_.comp (AffineScheme_stalk X _).inv,
+    is_local_ring_hom_ := infer_instance },
+  inv_fun := λ P, 
+  { pt := X.iso_Spec.inv.1.base P.pt,
+    ring_hom_ := P.ring_hom_.comp $ 
+      (localization.local_ring_hom _ _ (ring_hom.id _) $ by rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, Scheme.id_val_base, id_apply, ideal.comap_id]).comp 
+      (AffineScheme_stalk X $ X.iso_Spec.inv.1.base P.pt).hom,
+    is_local_ring_hom := infer_instance },
+  left_inv := sorry,
+  right_inv := sorry }
 
 instance : local_ring (Γ.obj $ op $ Spec_obj $ CommRing.of R) :=
 local_ring.of_equiv _ R $ ring_equiv.symm
@@ -153,25 +146,13 @@ X.presheaf.germ  ⟨P.pt, by change true; exact true.intro⟩
 
 def Spec_local_ring_to_AffineScheme :
   ((Spec_obj $ CommRing.of R) ⟶ X) ≃ point_local_ring_hom_pair X R :=
-(Scheme.hom.target_AffineScheme _ _).trans 
-{ to_fun := Spec_local_ring_to_AffineScheme_aux_to_fun _ _,
-  inv_fun := Spec_local_ring_to_AffineScheme_aux_inv_fun _ _,
-  left_inv := λ f, 
-  begin 
-    ext : 1,
-    rw [Spec_local_ring_to_AffineScheme_aux_inv_fun, ring_hom.comp_apply,
-      ring_hom.comp_apply, Spec_local_ring_to_AffineScheme_aux_to_fun_ring_hom_, 
-      ring_hom.comp_apply, ring_hom.comp_apply, iso.inv_hom_id_apply,
-      ring_hom.comp_apply],
-    erw AffineScheme_stalk_hom_germ_apply,
-    rw [localization.mk_eq_mk', localization.local_ring_hom_mk', ring_hom.id_apply],
-    simp_rw [ring_hom.id_apply, submonoid.coe_one],
-    rw [←localization.mk_eq_mk', ring_hom.factor_through_target_local_ring_apply, localization.lift_on_mk, 
-      units.inv_eq_coe_inv, mul_comm, units.inv_mul_eq_iff_eq_mul],
-    change f x = f 1 * f x,
-    rw [map_one, one_mul],
-  end,
-  right_inv := λ P, sorry }
+(Scheme.hom.target_AffineScheme _ _).trans $ equiv.trans 
+  (equiv.trans ({ to_fun := λ a, (structure_sheaf.global_sections_iso _).inv.comp a,
+    inv_fun := λ a, (structure_sheaf.global_sections_iso _).hom.comp a,
+    left_inv := sorry,
+    right_inv := sorry } : (Γ.obj (op X) ⟶ Γ.obj (op $ Spec_obj $ CommRing.of R)) ≃ 
+    ((Γ.obj $ op X) →+* R)) ring_hom.target_local_ring_equiv)
+  (point_local_ring_hom_pair_equiv _ _).symm
 
 end affine_cases
 
