@@ -267,7 +267,7 @@ begin
   erw [id_apply, comp_apply, pt_eq],
 end
 
-def point_local_ring_hom_pair_equiv :
+@[simps] def point_local_ring_hom_pair_equiv :
   point_local_ring_hom_pair X R ≃
   local_ring.point_local_ring_hom_pair (Γ.obj $ op X) R :=
 { to_fun := point_local_ring_hom_pair_to _ _,
