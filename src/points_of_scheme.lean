@@ -66,7 +66,7 @@ end
 
 section
 
-namespace Spec_local_ring_to_Scheme_auxs
+namespace Spec_local_ring_to_Scheme_equiv_point_local_ring_hom_pair_auxs
 
 section affine_cases
 
@@ -284,7 +284,7 @@ local_ring.of_equiv _ R $ ring_equiv.symm
   map_mul' := map_mul _,
   map_add' := map_add _ }
 
-def Spec_local_ring_to_AffineScheme :
+def Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair :
   ((Spec_obj $ CommRing.of R) ⟶ X) ≃ point_local_ring_hom_pair X R :=
 (Scheme.hom.target_AffineScheme _ _).trans $ equiv.trans 
   (equiv.trans ({ to_fun := λ a, (structure_sheaf.global_sections_iso _).inv.comp a,
@@ -306,10 +306,10 @@ algebraic_geometry.Spec_is_affine (op _)
 instance spec_is_affine' (S : CommRing) : is_affine $ Spec_obj S :=
 algebraic_geometry.Spec_is_affine (op _)
 
-variables {X R} (P : point_local_ring_hom_pair X R) 
+variables {X R} 
 
 section basic_defs
-
+variable (P : point_local_ring_hom_pair X R)
 variables {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
 
 def _root_.algebraic_geometry.is_affine_open.iso_Spec :
@@ -339,15 +339,17 @@ def _root_.algebraic_geometry.is_affine_open.point_local_ring_hom_pair :
   is_local_ring_hom := infer_instance }
 
 def _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme : Spec_obj (CommRing.of R) ⟶ X :=
-(Spec_local_ring_to_AffineScheme _ R).symm (hU.point_local_ring_hom_pair P mem_U) ≫ hU.from_Spec
+(Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair _ R).symm (hU.point_local_ring_hom_pair P mem_U) ≫ hU.from_Spec
 
 end basic_defs
 
 section independence
 
+variable (P : point_local_ring_hom_pair X R)
 variables {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
 variables {V : opens X.carrier} (hV : is_affine_open V) (mem_V : P.pt ∈ V)
 
+-- this is probably going to be long
 lemma _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme_wd : 
   hU.Spec_local_ring_to_Scheme P mem_U = hV.Spec_local_ring_to_Scheme P mem_V :=
 sorry
@@ -377,36 +379,114 @@ let α : X.to_LocallyRingedSpace.restrict (X.open_set_of x).open_embedding ≅
   hom_inv_id' := α.hom_inv_id,
   inv_hom_id' := α.inv_hom_id }
 
-lemma _root_.algebraic_geometry.Scheme.is_affine_opens_set_of (x : X.carrier) :
-  is_affine_open $ X.open_set_of x := sorry
+lemma _root_.algebraic_geometry.Scheme.is_affine_open_set_of (x : X.carrier) :
+  is_affine_open $ X.open_set_of x := 
+is_affine_of_iso (X.iso_Spec_of x).hom
 
 end
 
-def Spec_to_local_to_Scheme : Spec_obj (CommRing.of R) ⟶ X :=
-is_affine_open.Spec_local_ring_to_Scheme P _ _
+def Spec_local_ring_to_Scheme : Spec_obj (CommRing.of R) ⟶ X :=
+(X.is_affine_open_set_of P.pt).Spec_local_ring_to_Scheme P $ X.mem_open_set_of P.pt
 
 end independence
 
+section basic_defs
+
+variables (α : Spec_obj (CommRing.of R) ⟶ X)
+variables {V : opens X.carrier} (hV : is_affine_open V) 
+variables (image_mem : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V)
+
+section
+
+variables (X)
+
+lemma _root_.algebraic_geometry.Scheme.range_of_restrict :
+  set.range (X.of_restrict V.open_embedding).1.base = (V : set X.carrier) :=
+set.ext_iff.mpr $ λ x,
+{ mp := by { rintros ⟨x, rfl⟩, exact x.2, },
+  mpr := by { intros h, refine ⟨⟨x, h⟩, rfl⟩ } }
+
+end
+
+section
+
+include image_mem
+
+lemma image_subset_of_image_mem :
+  set.range α.1.base ⊆ set.range (X.of_restrict V.open_embedding).1.base :=
+begin 
+  rw X.range_of_restrict, rintros _ ⟨x, rfl⟩,
+  refine specializes.mem_open (specializes.map _ (by continuity)) V.2 image_mem,
+  rw ←prime_spectrum.le_iff_specializes,
+  change x.as_ideal ≤ local_ring.maximal_ideal R,
+  refine local_ring.le_maximal_ideal (ideal.is_prime.ne_top infer_instance),
+end
+
+end
+
+def Spec_local_ring_to_Scheme_factors_through_of_image_mem :
+  Spec_obj (CommRing.of R) ⟶ X.restrict V.open_embedding :=
+LocallyRingedSpace.is_open_immersion.lift (X.of_restrict V.open_embedding) α $
+image_subset_of_image_mem _ image_mem
+
+def to_point_local_ring_hom_pair_of_image_mem_affine_open_aux : point_local_ring_hom_pair (X.restrict $ V.open_embedding) R :=
+(@@Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair _ _ _ _ hV) $ 
+  Spec_local_ring_to_Scheme_factors_through_of_image_mem α image_mem
+
+def to_point_local_ring_hom_pair_of_image_mem_affine_open : point_local_ring_hom_pair X R :=
+let P := to_point_local_ring_hom_pair_of_image_mem_affine_open_aux α hV image_mem in 
+{ pt := P.pt.1,
+  ring_hom_ := P.ring_hom_.comp (PresheafedSpace.restrict_stalk_iso _ V.open_embedding P.pt).inv,
+  is_local_ring_hom := infer_instance }
+
+end basic_defs
+
+section independence
+
+variables (α : Spec_obj (CommRing.of R) ⟶ X)
+variables {V₁ V₂ : opens X.carrier} (hV₁ : is_affine_open V₁) (hV₂ : is_affine_open V₂)
+variables (image_mem₁ : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V₁)
+variables (image_mem₂ : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V₂)
+
+lemma to_point_local_ring_hom_of_image_mem_affine_open_wd :
+  to_point_local_ring_hom_pair_of_image_mem_affine_open α hV₁ image_mem₁ =
+  to_point_local_ring_hom_pair_of_image_mem_affine_open α hV₂ image_mem₂ :=
+sorry
+
+end independence
+
+def to_point_local_ring_hom_pair (α : Spec_obj (CommRing.of R) ⟶ X) :
+  point_local_ring_hom_pair X R :=
+to_point_local_ring_hom_pair_of_image_mem_affine_open α 
+  (X.is_affine_open_set_of (α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩)) $
+  X.mem_open_set_of _
+
 end nonaffine_cases
 
-end Spec_local_ring_to_Scheme_auxs
+end Spec_local_ring_to_Scheme_equiv_point_local_ring_hom_pair_auxs
+
+section
+
+open Spec_local_ring_to_Scheme_equiv_point_local_ring_hom_pair_auxs
 
 -- 01J6
-def Spec_local_ring_to_Scheme :
+def Spec_local_ring_to_Scheme_equiv_point_local_ring_pair :
   ((Spec_obj $ CommRing.of R) ⟶ X) ≃ point_local_ring_hom_pair X R :=
-sorry
+{ to_fun := to_point_local_ring_hom_pair,
+  inv_fun := Spec_local_ring_to_Scheme,
+  left_inv := sorry,
+  right_inv := sorry }
+
+end
 
 end
 
 variables {X R}
 
-def image_of_maximal_ideal : X.carrier := f.1.base $ 
-  ⟨local_ring.maximal_ideal R, (local_ring.maximal_ideal.is_maximal R).is_prime⟩
-
 def Spec_stalk_to_Scheme :
-  Spec_obj (X.presheaf.stalk (image_of_maximal_ideal f)) ⟶ X :=
-(Spec_local_ring_to_Scheme X _).symm 
-{ pt := (image_of_maximal_ideal f),
+  Spec_obj (X.presheaf.stalk $ f.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩) ⟶ X :=
+(Spec_local_ring_to_Scheme_equiv_point_local_ring_pair X _).symm 
+{ pt := f.1.base ⟨local_ring.maximal_ideal _, _⟩,
   ring_hom_ := ring_hom.id _,
   is_local_ring_hom := is_local_ring_hom_id _ }
 
