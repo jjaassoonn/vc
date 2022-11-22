@@ -483,11 +483,12 @@ end
 
 variables {X R}
 
-def Spec_stalk_to_Scheme :
-  Spec_obj (X.presheaf.stalk $ f.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩) ⟶ X :=
+-- 02NA
+def Spec_stalk_to_Scheme (x : X.carrier) :
+  Spec_obj (X.presheaf.stalk x) ⟶ X :=
 (Spec_local_ring_to_Scheme_equiv_point_local_ring_pair X _).symm 
-{ pt := f.1.base ⟨local_ring.maximal_ideal _, _⟩,
+{ pt := x,
   ring_hom_ := ring_hom.id _,
-  is_local_ring_hom := is_local_ring_hom_id _ }
+  is_local_ring_hom := infer_instance }
 
 end algebraic_geometry
