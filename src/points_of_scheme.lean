@@ -306,7 +306,11 @@ algebraic_geometry.Spec_is_affine (op _)
 instance spec_is_affine' (S : CommRing) : is_affine $ Spec_obj S :=
 algebraic_geometry.Spec_is_affine (op _)
 
-variables {X R} (P : point_local_ring_hom_pair X R) {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
+variables {X R} (P : point_local_ring_hom_pair X R) 
+
+section basic_defs
+
+variables {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
 
 def _root_.algebraic_geometry.is_affine_open.iso_Spec :
   X.restrict U.open_embedding ≅ 
@@ -326,12 +330,62 @@ def stalk_on_open_equiv (x : X.carrier) (hx : x ∈ U) :
   X.presheaf.stalk x ≅ (X.restrict U.open_embedding).presheaf.stalk ⟨x, hx⟩ :=
 iso.symm $ PresheafedSpace.restrict_stalk_iso X.to_PresheafedSpace _ _
 
-def point_local_ring_hom_pair_in_affine_open :
+def _root_.algebraic_geometry.is_affine_open.point_local_ring_hom_pair :
   point_local_ring_hom_pair (Spec_obj $ X.presheaf.obj $ op U) R := 
+{ pt := hU.iso_Spec.hom.1 ⟨P.pt, mem_U⟩,
+  ring_hom_ := P.ring_hom_.comp $ 
+    (PresheafedSpace.restrict_stalk_iso X.to_PresheafedSpace U.open_embedding ⟨P.pt, mem_U⟩).hom.comp $
+    PresheafedSpace.stalk_map hU.iso_Spec.hom.1 _,
+  is_local_ring_hom := infer_instance }
+
+def _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme : Spec_obj (CommRing.of R) ⟶ X :=
+(Spec_local_ring_to_AffineScheme _ R).symm (hU.point_local_ring_hom_pair P mem_U) ≫ hU.from_Spec
+
+end basic_defs
+
+section independence
+
+variables {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
+variables {V : opens X.carrier} (hV : is_affine_open V) (mem_V : P.pt ∈ V)
+
+lemma _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme_wd : 
+  hU.Spec_local_ring_to_Scheme P mem_U = hV.Spec_local_ring_to_Scheme P mem_V :=
 sorry
 
-def Spec_local_ring_to_Schme_of_affine_open : Spec_obj (CommRing.of R) ⟶ X :=
-(Spec_local_ring_to_AffineScheme _ R).symm sorry ≫ hU.from_Spec
+section
+
+variables (X)
+
+def _root_.algebraic_geometry.Scheme.open_set_of (x : X.carrier) : opens X.carrier :=
+(X.local_affine x).some.1
+
+lemma _root_.algebraic_geometry.Scheme.mem_open_set_of (x : X.carrier) :
+  x ∈ X.open_set_of x :=
+(X.local_affine x).some.2
+
+def _root_.algebraic_geometry.Scheme.CommRing_of (x : X.carrier) : CommRing.{u} :=
+(X.local_affine x).some_spec.some
+
+def _root_.algebraic_geometry.Scheme.iso_Spec_of (x : X.carrier) :
+  X.restrict (X.open_set_of x).open_embedding ≅
+  Spec_obj (X.CommRing_of x) :=
+let α : X.to_LocallyRingedSpace.restrict (X.open_set_of x).open_embedding ≅ 
+    Spec.to_LocallyRingedSpace.obj (op $ X.CommRing_of x) :=
+  (X.local_affine x).some_spec.some_spec.some in
+{ hom := α.hom,
+  inv := α.inv,
+  hom_inv_id' := α.hom_inv_id,
+  inv_hom_id' := α.inv_hom_id }
+
+lemma _root_.algebraic_geometry.Scheme.is_affine_opens_set_of (x : X.carrier) :
+  is_affine_open $ X.open_set_of x := sorry
+
+end
+
+def Spec_to_local_to_Scheme : Spec_obj (CommRing.of R) ⟶ X :=
+is_affine_open.Spec_local_ring_to_Scheme P _ _
+
+end independence
 
 end nonaffine_cases
 
