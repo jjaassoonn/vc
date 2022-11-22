@@ -308,15 +308,30 @@ algebraic_geometry.Spec_is_affine (op _)
 
 variables {X R} (P : point_local_ring_hom_pair X R) {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
 
+def _root_.algebraic_geometry.is_affine_open.iso_Spec :
+  X.restrict U.open_embedding ≅ 
+  Spec_obj (X.presheaf.obj $ op U) :=
+@Scheme.iso_Spec _ hU ≪≫ eq_to_iso
+begin 
+  dsimp, congr', ext y, split,
+  { rintros ⟨y, _, rfl⟩, exact y.2 },
+  { intros hy, exact ⟨⟨y, hy⟩, ⟨⟩, rfl⟩, }
+end
+
+def _root_.algebraic_geometry.is_affine_open.pt_in_restricted_global_sections {x : X.carrier} (hx : x ∈ U) : 
+  (Spec_obj $ X.presheaf.obj $ op U).carrier :=
+hU.iso_Spec.hom.1.base ⟨x, hx⟩
+
+def stalk_on_open_equiv (x : X.carrier) (hx : x ∈ U) :
+  X.presheaf.stalk x ≅ (X.restrict U.open_embedding).presheaf.stalk ⟨x, hx⟩ :=
+iso.symm $ PresheafedSpace.restrict_stalk_iso X.to_PresheafedSpace _ _
+
 def point_local_ring_hom_pair_in_affine_open :
-  point_local_ring_hom_pair (Spec_obj (X.presheaf.obj $ op U)) R := 
-{ pt := (show P.pt ∈ set.range (hU.from_Spec.1.base), from hU.from_Spec_range.symm ▸ mem_U).some,
-  ring_hom_ := sorry,
-  is_local_ring_hom := sorry }
+  point_local_ring_hom_pair (Spec_obj $ X.presheaf.obj $ op U) R := 
+sorry
 
 def Spec_local_ring_to_Schme_of_affine_open : Spec_obj (CommRing.of R) ⟶ X :=
-(Spec_local_ring_to_AffineScheme (Spec_obj $ X.presheaf.obj $ op U) R).symm 
-  (point_local_ring_hom_pair_in_affine_open P hU mem_U) ≫ hU.from_Spec
+(Spec_local_ring_to_AffineScheme _ R).symm sorry ≫ hU.from_Spec
 
 end nonaffine_cases
 
