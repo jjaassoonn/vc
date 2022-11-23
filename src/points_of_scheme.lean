@@ -435,6 +435,81 @@ variable (P : point_local_ring_hom_pair X R)
 variables {U : opens X.carrier} (hU : is_affine_open U) (mem_U : P.pt ∈ U)
 variables {V : opens X.carrier} (hV : is_affine_open V) (mem_V : P.pt ∈ V)
 
+namespace Spec_local_ring_to_Scheme_wd_proofs
+
+def ψ_ : 
+  (X.restrict U.open_embedding).presheaf.stalk ⟨P.pt, mem_U⟩ →+* R := 
+P.ring_hom_.comp 
+  (PresheafedSpace.restrict_stalk_iso _ U.open_embedding _).hom
+
+instance is_local_ring_hom_ψ_ : is_local_ring_hom (ψ_ P mem_U) :=
+by { delta ψ_, apply_instance }
+
+def ψ'_ :
+  localization.at_prime 
+    (((@Scheme.iso_Spec _ hU).hom.1.base ⟨P.pt, mem_U⟩).as_ideal : 
+      ideal $ Γ.obj $ op $ X.restrict U.open_embedding) →+* R :=
+(ψ_ P mem_U).comp $
+  ((PresheafedSpace.stalk_map (@Scheme.iso_Spec _ hU).hom.1) _).comp
+    (structure_sheaf.stalk_iso _ _).inv
+
+def ψ''_ : (Γ.obj $ op $ X.restrict U.open_embedding) →+* R :=
+(ψ'_ P hU mem_U).comp $ @algebra_map _ _ _ _ $
+  by { dsimp, exactI localization.algebra }
+
+@[simps] def res'_ (subset_rel : U ⊆ V) :
+  localization.at_prime 
+    (((@Scheme.iso_Spec _ hV).hom.1.base ⟨P.pt, mem_V⟩).as_ideal : 
+      ideal $ Γ.obj $ op $ X.restrict V.open_embedding) →+*
+  localization.at_prime 
+    (((@Scheme.iso_Spec _ hU).hom.1.base ⟨P.pt, mem_U⟩).as_ideal : 
+      ideal $ Γ.obj $ op $ X.restrict U.open_embedding) :=
+{ to_fun := λ x, x.lift_on (λ (a : Γ.obj $ op $ X.restrict V.open_embedding) b, 
+    localization.mk 
+      (X.presheaf.map 
+        (hom_of_le $ by { convert subset_rel;
+          { ext p, split, 
+            { rintros ⟨p, _, rfl⟩, exact p.2 },
+            { intro h, refine ⟨⟨p, h⟩, ⟨⟩, rfl⟩, } } } : U.open_embedding.is_open_map.functor.obj ⊤ ⟶ 
+          V.open_embedding.is_open_map.functor.obj ⊤).op a : 
+        Γ.obj $ op $ X.restrict U.open_embedding) 
+        ⟨X.presheaf.map sorry b.1, sorry⟩) sorry,
+  map_one' := sorry,
+  map_mul' := sorry,
+  map_zero' := sorry,
+  map_add' := sorry }
+
+lemma triangle_commutes (subset_rel : U ⊆ V) :
+  (ψ'_ P hU mem_U).comp (res'_ P hU mem_U hV mem_V subset_rel) = 
+  ψ'_ P hV mem_V :=
+sorry
+
+@[simps] def point_local_ring_hom_pair_ : 
+  point_local_ring_hom_pair (X.restrict U.open_embedding) R :=
+{ pt := ⟨P.pt, mem_U⟩,
+  ring_hom_ := ψ_ _ _,
+  is_local_ring_hom := infer_instance }
+
+def Ψ_ : Spec_obj (CommRing.of R) ⟶ X :=
+(@@Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair 
+    (X.restrict U.open_embedding) R _ _ hU).symm
+  (point_local_ring_hom_pair_ P mem_U) ≫ X.of_restrict _
+
+lemma _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme_eq :
+  hU.Spec_local_ring_to_Scheme P mem_U = Ψ_ P hU mem_U := sorry
+
+lemma _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme_wd_of_subset_rel
+  (subset_rel : U ⊆ V) : 
+  hU.Spec_local_ring_to_Scheme P mem_U = hV.Spec_local_ring_to_Scheme P mem_V :=
+begin 
+  rw [hU.Spec_local_ring_to_Scheme_eq P mem_U, 
+    hV.Spec_local_ring_to_Scheme_eq P mem_V],
+  sorry
+end
+
+
+end Spec_local_ring_to_Scheme_wd_proofs
+
 -- this is probably going to be long
 lemma _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme_wd : 
   hU.Spec_local_ring_to_Scheme P mem_U = hV.Spec_local_ring_to_Scheme P mem_V :=
