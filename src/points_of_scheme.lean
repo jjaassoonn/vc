@@ -72,17 +72,23 @@ section affine_cases
 
 variables [is_affine X]
 
-@[simps] def AffineScheme_stalk (x : X.carrier) : X.presheaf.stalk x ≅ CommRing.of (localization.at_prime (X.iso_Spec.hom.1.base x).as_ideal) :=
-{ hom := eq_to_hom (by rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, id_apply]) ≫ 
+@[simps] def AffineScheme_stalk (x : X.carrier) : 
+  X.presheaf.stalk x ≅ 
+  CommRing.of (localization.at_prime (X.iso_Spec.hom.1.base x).as_ideal) :=
+{ hom := eq_to_hom (by rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, 
+      Scheme.id_val_base, id_apply]) ≫ 
     PresheafedSpace.stalk_map X.iso_Spec.inv.1 _ ≫ 
     (structure_sheaf.stalk_iso _ _).hom,
-  inv := (structure_sheaf.stalk_iso _ _).inv ≫ PresheafedSpace.stalk_map X.iso_Spec.hom.1 _,
+  inv := (structure_sheaf.stalk_iso _ _).inv ≫ 
+    PresheafedSpace.stalk_map X.iso_Spec.hom.1 _,
   hom_inv_id' := 
   begin
     rw [category.assoc, category.assoc, iso.hom_inv_id_assoc],
     rw [←PresheafedSpace.stalk_map.comp], 
-    change eq_to_hom _ ≫ PresheafedSpace.stalk_map ((X.iso_Spec.hom ≫ X.iso_Spec.inv).val) x = _,
-    erw ←PresheafedSpace.stalk_map.congr_hom (𝟙 _) (X.iso_Spec.hom ≫ X.iso_Spec.inv).val _ x,
+    change eq_to_hom _ ≫ 
+      PresheafedSpace.stalk_map ((X.iso_Spec.hom ≫ X.iso_Spec.inv).val) x = _,
+    erw ←PresheafedSpace.stalk_map.congr_hom (𝟙 _) 
+      (X.iso_Spec.hom ≫ X.iso_Spec.inv).val _ x,
     rw PresheafedSpace.stalk_map.id,
     rw iso.hom_inv_id,
     refl,  
@@ -90,38 +96,52 @@ variables [is_affine X]
   inv_hom_id' := 
   begin 
     generalize_proofs h1 h2 h3,
-    rw [category.assoc, ←category.assoc _ (eq_to_hom _), PresheafedSpace.stalk_map.congr_point,
-      category.assoc, ←category.assoc (PresheafedSpace.stalk_map _ _), ←PresheafedSpace.stalk_map.comp,
-      ←category.assoc (eq_to_hom _), PresheafedSpace.stalk_map.congr_hom (X.iso_Spec.inv.val ≫ X.iso_Spec.hom.val) (𝟙 _),
-      PresheafedSpace.stalk_map.id, eq_to_hom_trans_assoc, eq_to_hom_refl, category.id_comp], 
+    rw [category.assoc, ←category.assoc _ (eq_to_hom _), 
+      PresheafedSpace.stalk_map.congr_point, category.assoc, 
+      ←category.assoc (PresheafedSpace.stalk_map _ _), 
+      ←PresheafedSpace.stalk_map.comp, ←category.assoc (eq_to_hom _), 
+      PresheafedSpace.stalk_map.congr_hom 
+        (X.iso_Spec.inv.val ≫ X.iso_Spec.hom.val) (𝟙 _),
+      PresheafedSpace.stalk_map.id, eq_to_hom_trans_assoc, eq_to_hom_refl, 
+      category.id_comp], 
     erw [category.id_comp],
     rw iso.inv_hom_id, 
     { change (X.iso_Spec.inv ≫ X.iso_Spec.hom).val = 𝟙 _,
       rw iso.inv_hom_id,
       refl, },
-    { rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, id_apply], },
+    { rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, 
+        id_apply], },
   end }
 
 @[simps] def point_local_ring_hom_pair_to (P : point_local_ring_hom_pair X R) :
   local_ring.point_local_ring_hom_pair (Γ.obj $ op X) R :=
 { pt := X.iso_Spec.hom.1.base P.pt,
-  ring_hom_ := P.ring_hom_.comp $ ring_hom.comp (PresheafedSpace.stalk_map X.iso_Spec.hom.1 _) $ structure_sheaf.localization_to_stalk _ _,
+  ring_hom_ := P.ring_hom_.comp $ 
+    (PresheafedSpace.stalk_map X.iso_Spec.hom.1 _).comp $ 
+      structure_sheaf.localization_to_stalk _ _,
   is_local_ring_hom_ := infer_instance }
 
-@[simps] def from_point_local_ring_hom_pair (P : local_ring.point_local_ring_hom_pair (Γ.obj $ op X) R) :
+@[simps] def from_point_local_ring_hom_pair 
+  (P : local_ring.point_local_ring_hom_pair (Γ.obj $ op X) R) :
   point_local_ring_hom_pair X R :=
 { pt := X.iso_Spec.inv.1.base P.pt,
-  ring_hom_ := ring_hom.comp P.ring_hom_ $ (structure_sheaf.stalk_to_fiber_ring_hom _ _).comp $ PresheafedSpace.stalk_map X.iso_Spec.inv.1 _, --(PresheafedSpace.stalk_map X.iso_Spec.inv.1 _),
+  ring_hom_ := P.ring_hom_.comp $ 
+    (structure_sheaf.stalk_to_fiber_ring_hom _ _).comp $ 
+    PresheafedSpace.stalk_map X.iso_Spec.inv.1 _,
   is_local_ring_hom := infer_instance }
 
-lemma CommRing_comp_eq_comp {R S T : Type u} [comm_ring R] [comm_ring S] [comm_ring T]
-  (f : R →+* S) (g : S →+* T) :
-  g.comp f = (show CommRing.of R ⟶ CommRing.of S, from f) ≫ (show CommRing.of S ⟶ CommRing.of T, from g) := rfl
+lemma CommRing_comp_eq_comp {R S T : Type u} 
+  [comm_ring R] [comm_ring S] [comm_ring T] (f : R →+* S) (g : S →+* T) :
+  g.comp f = (show CommRing.of R ⟶ CommRing.of S, from f) ≫ 
+    (show CommRing.of S ⟶ CommRing.of T, from g) := 
+rfl
 
 lemma localization.congr_point {R : Type u} [comm_ring R]
   (p q : prime_spectrum R) (h : p = q) (x) :
-  (eq_to_hom (by rw h) : CommRing.of (localization.at_prime p.as_ideal) ⟶ CommRing.of (localization.at_prime q.as_ideal)) x = 
-  (x.lift_on (λ a b, localization.mk a (⟨b, by { convert b.2, rw h }⟩ : q.as_ideal.prime_compl)) $ λ a c b d H, 
+  (eq_to_hom (by rw h) : CommRing.of (localization.at_prime p.as_ideal) ⟶ 
+    CommRing.of (localization.at_prime q.as_ideal)) x = 
+  (x.lift_on (λ a b, localization.mk a (⟨b, by { convert b.2, rw h }⟩ : 
+      q.as_ideal.prime_compl)) $ λ a c b d H, 
     begin 
       rw localization.r_iff_exists at H,
       obtain ⟨e, he⟩ := H,
@@ -143,10 +163,11 @@ begin
   refl,
 end
 
-lemma strucutre_sheaf.localization_to_stalk.congr_point (R : Type u) [comm_ring R] (x y : prime_spectrum R)
-  (h : x = y) :
+lemma strucutre_sheaf.localization_to_stalk.congr_point 
+  (R : Type u) [comm_ring R] (x y : prime_spectrum R) (h : x = y) :
   structure_sheaf.localization_to_stalk R x =
-  eq_to_hom (by rw h) ≫ (structure_sheaf.localization_to_stalk R y) ≫ eq_to_hom (by rw h) := 
+  eq_to_hom (by rw h) ≫ (structure_sheaf.localization_to_stalk R y) ≫ 
+    eq_to_hom (by rw h) := 
 begin 
   subst h,
   rw [eq_to_hom_refl, eq_to_hom_refl, category.id_comp, category.comp_id],
@@ -163,30 +184,36 @@ begin
   congr,
 end
 
-lemma algebra_map_self (R : Type u) [comm_ring R] : algebra_map R R = ring_hom.id R := by { ext : 1, refl }
+lemma algebra_map_self (R : Type u) [comm_ring R] : 
+  algebra_map R R = ring_hom.id R := by { ext : 1, refl }
 
 lemma point_local_ring_hom_pair_to_from (P) :
   point_local_ring_hom_pair_to _ _ (from_point_local_ring_hom_pair X R P) = P :=
-local_ring.point_local_ring_hom_pair_ext _ _ _ _ (by { dsimp, rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, Scheme.id_val_base, id_apply] }) 
-begin 
+local_ring.point_local_ring_hom_pair_ext _ _ _ _ 
+(by { dsimp, rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, 
+  Scheme.id_val_base, id_apply] }) begin 
   obtain ⟨pt, f, h⟩ := P,
-  dsimp only [point_local_ring_hom_pair_to_ring_hom_, from_point_local_ring_hom_pair_ring_hom_, CommRing_comp_eq_comp,
+  dsimp only [point_local_ring_hom_pair_to_ring_hom_, 
+    from_point_local_ring_hom_pair_ring_hom_, CommRing_comp_eq_comp, 
     from_point_local_ring_hom_pair_pt],
   simp only [category.assoc],
-  slice_lhs 3 4 { erw ←PresheafedSpace.stalk_map.comp X.iso_Spec.inv.1 X.iso_Spec.hom.1 pt },
-  rw [PresheafedSpace.stalk_map.congr_hom (X.iso_Spec.inv.val ≫ X.iso_Spec.hom.val) (𝟙 _) _ pt, PresheafedSpace.stalk_map.id], 
+  slice_lhs 3 4 
+  { erw ←PresheafedSpace.stalk_map.comp X.iso_Spec.inv.1 X.iso_Spec.hom.1 pt },
+  rw [PresheafedSpace.stalk_map.congr_hom 
+    (X.iso_Spec.inv.val ≫ X.iso_Spec.hom.val) (𝟙 _) _ pt, 
+    PresheafedSpace.stalk_map.id], 
   swap,
   { erw [←Scheme.comp_val], 
     rw [iso.inv_hom_id],
     refl, },
   erw [category.comp_id],
   have pt_eq : (X.iso_Spec.hom.val.base) ((X.iso_Spec.inv.val.base) pt) = pt,
-  { rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, Scheme.id_val_base, id_apply] },
+  { rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, Scheme.id_val_base, 
+      id_apply] },
   
   slice_lhs 2 3 { },
   rw strucutre_sheaf.localization_to_stalk.congr_point _ _ pt,
   swap, { exact pt_eq },
-  -- slice_lhs 3 3 {  },
   rw [category.assoc, category.assoc], 
   erw [category.assoc, category.assoc],
   slice_lhs 4 5 {  },
@@ -198,7 +225,8 @@ begin
   { rw pt_eq,
     refl, },
   generalize_proofs h1 h2 h3 h4 h5 h6,
-  rw show eq_to_hom h6 = 𝟙 ((Spec.structure_sheaf (Scheme.Γ.obj (op X))).presheaf.stalk pt), from _,
+  rw show eq_to_hom h6 = 
+    𝟙 ((Spec.structure_sheaf (Scheme.Γ.obj (op X))).presheaf.stalk pt), from _,
   swap,
   { convert eq_to_hom_refl _ _, refl, },
   slice_lhs 3 4 { },
@@ -222,7 +250,8 @@ begin
   exact pt_eq.symm,
 end
 
-lemma stalk_specializes.congr_point (A : PresheafedSpace CommRing) (x y : A) (h : x = y) :
+lemma stalk_specializes.congr_point (A : PresheafedSpace CommRing) 
+  (x y : A) (h : x = y) :
   A.presheaf.stalk_specializes (by rw h : x ⤳ y) = eq_to_hom (by rw h) :=
 begin 
  subst h,
@@ -235,19 +264,20 @@ end
 lemma point_local_ring_hom_pair_from_to (P) :
   from_point_local_ring_hom_pair X R (point_local_ring_hom_pair_to _ _ P) = P :=
 have pt_eq : (X.iso_Spec.inv.val.base) ((X.iso_Spec.hom.val.base) P.pt) = P.pt,
-begin
-  rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, id_apply],
-end,
+by rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, 
+  id_apply],
 point_local_ring_hom_pair_ext _ _ _ _ pt_eq
 begin 
   obtain ⟨pt, f, h⟩ := P,
-  dsimp only [point_local_ring_hom_pair_to_ring_hom_, from_point_local_ring_hom_pair_ring_hom_, CommRing_comp_eq_comp,
+  dsimp only [point_local_ring_hom_pair_to_ring_hom_, 
+    from_point_local_ring_hom_pair_ring_hom_, CommRing_comp_eq_comp,
     from_point_local_ring_hom_pair_pt],
   simp only [category.assoc],
   erw (structure_sheaf.stalk_iso _ _).hom_inv_id_assoc,
   slice_lhs 2 3 {},
   erw ←PresheafedSpace.stalk_map.comp X.iso_Spec.hom.1 X.iso_Spec.inv.1 pt,
-  rw PresheafedSpace.stalk_map.congr_hom (X.iso_Spec.hom.val ≫ X.iso_Spec.inv.val) (𝟙 _) _ pt,
+  rw PresheafedSpace.stalk_map.congr_hom 
+    (X.iso_Spec.hom.val ≫ X.iso_Spec.inv.val) (𝟙 _) _ pt,
   swap,
   { erw [←Scheme.comp_val],
     rw [iso.hom_inv_id],
@@ -287,12 +317,16 @@ local_ring.of_equiv _ R $ ring_equiv.symm
 def Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair :
   ((Spec_obj $ CommRing.of R) ⟶ X) ≃ point_local_ring_hom_pair X R :=
 (Scheme.hom.target_AffineScheme _ _).trans $ equiv.trans 
-  (equiv.trans ({ to_fun := λ a, (structure_sheaf.global_sections_iso _).inv.comp a,
-    inv_fun := λ a, (structure_sheaf.global_sections_iso _).hom.comp a,
-    left_inv := λ a, ring_hom.ext $ λ z, by { dsimp only, rw [ring_hom.comp_apply, ring_hom.comp_apply], 
-      erw (structure_sheaf.global_sections_iso _).inv_hom_id_apply,  },
-    right_inv := λ a, ring_hom.ext $ λ z, by { dsimp only, rw [ring_hom.comp_apply, ring_hom.comp_apply],
-      erw (structure_sheaf.global_sections_iso _).hom_inv_id_apply, } } : (Γ.obj (op X) ⟶ Γ.obj (op $ Spec_obj $ CommRing.of R)) ≃ 
+  (equiv.trans 
+    ({ to_fun := λ a, (structure_sheaf.global_sections_iso _).inv.comp a,
+      inv_fun := λ a, (structure_sheaf.global_sections_iso _).hom.comp a,
+      left_inv := λ a, ring_hom.ext $ λ z, 
+        by { dsimp only, rw [ring_hom.comp_apply, ring_hom.comp_apply], 
+          erw (structure_sheaf.global_sections_iso _).inv_hom_id_apply,  },
+      right_inv := λ a, ring_hom.ext $ λ z, 
+        by { dsimp only, rw [ring_hom.comp_apply, ring_hom.comp_apply],
+          erw (structure_sheaf.global_sections_iso _).hom_inv_id_apply, } } : 
+    (Γ.obj (op X) ⟶ Γ.obj (op $ Spec_obj $ CommRing.of R)) ≃ 
     ((Γ.obj $ op X) →+* R)) ring_hom.target_local_ring_equiv)
   (point_local_ring_hom_pair_equiv _ _).symm
 
@@ -300,7 +334,8 @@ end affine_cases
 
 section nonaffine_cases
 
-instance spec_is_affine (S : Type u) [comm_ring S] : is_affine $ Spec_obj (CommRing.of S) :=
+instance spec_is_affine (S : Type u) [comm_ring S] : 
+  is_affine $ Spec_obj (CommRing.of S) :=
 algebraic_geometry.Spec_is_affine (op _)
 
 instance spec_is_affine' (S : CommRing) : is_affine $ Spec_obj S :=
@@ -322,8 +357,8 @@ begin
   { intros hy, exact ⟨⟨y, hy⟩, ⟨⟩, rfl⟩, }
 end
 
-def _root_.algebraic_geometry.is_affine_open.pt_in_restricted_global_sections {x : X.carrier} (hx : x ∈ U) : 
-  (Spec_obj $ X.presheaf.obj $ op U).carrier :=
+def _root_.algebraic_geometry.is_affine_open.pt_in_restricted_global_sections 
+  {x : X.carrier} (hx : x ∈ U) : (Spec_obj $ X.presheaf.obj $ op U).carrier :=
 hU.iso_Spec.hom.1.base ⟨x, hx⟩
 
 def stalk_on_open_equiv (x : X.carrier) (hx : x ∈ U) :
@@ -334,12 +369,14 @@ def _root_.algebraic_geometry.is_affine_open.point_local_ring_hom_pair :
   point_local_ring_hom_pair (Spec_obj $ X.presheaf.obj $ op U) R := 
 { pt := hU.iso_Spec.hom.1 ⟨P.pt, mem_U⟩,
   ring_hom_ := P.ring_hom_.comp $ 
-    (PresheafedSpace.restrict_stalk_iso X.to_PresheafedSpace U.open_embedding ⟨P.pt, mem_U⟩).hom.comp $
-    PresheafedSpace.stalk_map hU.iso_Spec.hom.1 _,
+    (X.to_PresheafedSpace.restrict_stalk_iso U.open_embedding 
+      ⟨P.pt, mem_U⟩).hom.comp $ PresheafedSpace.stalk_map hU.iso_Spec.hom.1 _,
   is_local_ring_hom := infer_instance }
 
-def _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme : Spec_obj (CommRing.of R) ⟶ X :=
-(Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair _ R).symm (hU.point_local_ring_hom_pair P mem_U) ≫ hU.from_Spec
+def _root_.algebraic_geometry.is_affine_open.Spec_local_ring_to_Scheme : 
+  Spec_obj (CommRing.of R) ⟶ X :=
+(Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair _ R).symm 
+  (hU.point_local_ring_hom_pair P mem_U) ≫ hU.from_Spec
 
 end basic_defs
 
@@ -358,15 +395,15 @@ section
 
 variables (X)
 
-def _root_.algebraic_geometry.Scheme.open_set_of (x : X.carrier) : opens X.carrier :=
-(X.local_affine x).some.1
+def _root_.algebraic_geometry.Scheme.open_set_of (x : X.carrier) : 
+  opens X.carrier := (X.local_affine x).some.1
 
 lemma _root_.algebraic_geometry.Scheme.mem_open_set_of (x : X.carrier) :
   x ∈ X.open_set_of x :=
 (X.local_affine x).some.2
 
-def _root_.algebraic_geometry.Scheme.CommRing_of (x : X.carrier) : CommRing.{u} :=
-(X.local_affine x).some_spec.some
+def _root_.algebraic_geometry.Scheme.CommRing_of (x : X.carrier) : 
+  CommRing.{u} := (X.local_affine x).some_spec.some
 
 def _root_.algebraic_geometry.Scheme.iso_Spec_of (x : X.carrier) :
   X.restrict (X.open_set_of x).open_embedding ≅
@@ -386,7 +423,8 @@ is_affine_of_iso (X.iso_Spec_of x).hom
 end
 
 def Spec_local_ring_to_Scheme : Spec_obj (CommRing.of R) ⟶ X :=
-(X.is_affine_open_set_of P.pt).Spec_local_ring_to_Scheme P $ X.mem_open_set_of P.pt
+(X.is_affine_open_set_of P.pt).Spec_local_ring_to_Scheme P $ 
+  X.mem_open_set_of P.pt
 
 end independence
 
@@ -394,7 +432,8 @@ section basic_defs
 
 variables (α : Spec_obj (CommRing.of R) ⟶ X)
 variables {V : opens X.carrier} (hV : is_affine_open V) 
-variables (image_mem : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V)
+variables 
+  (image_mem : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V)
 
 section
 
@@ -429,14 +468,18 @@ def Spec_local_ring_to_Scheme_factors_through_of_image_mem :
 LocallyRingedSpace.is_open_immersion.lift (X.of_restrict V.open_embedding) α $
 image_subset_of_image_mem _ image_mem
 
-def to_point_local_ring_hom_pair_of_image_mem_affine_open_aux : point_local_ring_hom_pair (X.restrict $ V.open_embedding) R :=
+def to_point_local_ring_hom_pair_of_image_mem_affine_open_aux : 
+  point_local_ring_hom_pair (X.restrict $ V.open_embedding) R :=
 (@@Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair _ _ _ _ hV) $ 
   Spec_local_ring_to_Scheme_factors_through_of_image_mem α image_mem
 
-def to_point_local_ring_hom_pair_of_image_mem_affine_open : point_local_ring_hom_pair X R :=
-let P := to_point_local_ring_hom_pair_of_image_mem_affine_open_aux α hV image_mem in 
+def to_point_local_ring_hom_pair_of_image_mem_affine_open : 
+  point_local_ring_hom_pair X R :=
+let P := to_point_local_ring_hom_pair_of_image_mem_affine_open_aux 
+  α hV image_mem in 
 { pt := P.pt.1,
-  ring_hom_ := P.ring_hom_.comp (PresheafedSpace.restrict_stalk_iso _ V.open_embedding P.pt).inv,
+  ring_hom_ := P.ring_hom_.comp 
+    (PresheafedSpace.restrict_stalk_iso _ V.open_embedding P.pt).inv,
   is_local_ring_hom := infer_instance }
 
 end basic_defs
@@ -444,9 +487,12 @@ end basic_defs
 section independence
 
 variables (α : Spec_obj (CommRing.of R) ⟶ X)
-variables {V₁ V₂ : opens X.carrier} (hV₁ : is_affine_open V₁) (hV₂ : is_affine_open V₂)
-variables (image_mem₁ : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V₁)
-variables (image_mem₂ : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V₂)
+variables {V₁ V₂ : opens X.carrier} 
+variables (hV₁ : is_affine_open V₁) (hV₂ : is_affine_open V₂)
+variables 
+  (image_mem₁ : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V₁)
+variables 
+  (image_mem₂ : α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩ ∈ V₂)
 
 lemma to_point_local_ring_hom_of_image_mem_affine_open_wd :
   to_point_local_ring_hom_pair_of_image_mem_affine_open α hV₁ image_mem₁ =
@@ -458,7 +504,8 @@ end independence
 def to_point_local_ring_hom_pair (α : Spec_obj (CommRing.of R) ⟶ X) :
   point_local_ring_hom_pair X R :=
 to_point_local_ring_hom_pair_of_image_mem_affine_open α 
-  (X.is_affine_open_set_of (α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩)) $
+  (X.is_affine_open_set_of 
+    (α.1.base ⟨local_ring.maximal_ideal _, infer_instance⟩)) $ 
   X.mem_open_set_of _
 
 end nonaffine_cases
