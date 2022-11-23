@@ -364,6 +364,19 @@ begin
   congr' 1,
 end
 
+lemma symm_apply (P : point_local_ring_hom_pair X R) :
+  (Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair X R).symm P = 
+  (Scheme.hom.target_AffineScheme (Spec_obj $ CommRing.of R) X).symm
+    ((structure_sheaf.to_open ↥(CommRing.of R) ⊤ : _ →+* _).comp $
+      (P.ring_hom_.comp $
+        (PresheafedSpace.stalk_map X.iso_Spec.hom.1 P.pt : _ →+* _).comp
+          (structure_sheaf.localization_to_stalk (Γ.obj $ op X) $ 
+            X.iso_Spec.hom.val.base P.pt)).comp $
+        @@algebra_map (Scheme.Γ.obj (op X)) 
+          (localization.at_prime $ (X.iso_Spec.hom.1.base P.pt).as_ideal) _ _ $
+            by {dsimp, exactI localization.algebra}) := 
+rfl
+  
 end Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair
 
 end affine_cases
