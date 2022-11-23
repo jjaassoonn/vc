@@ -1,3 +1,7 @@
+---
+date created: 2022-11-23 02:34
+---
+
 # [Points of Scheme](../src/points_of_scheme.lean)
 
 Let $R$ be a local ring and $X$ be a scheme. The goal is to show that
@@ -37,6 +41,7 @@ So the bijection is roughly this (modulo a lot of head-scratching on type-theory
 ```
 
 where $\mathfrak m$ is the unique maximal ideal of $R$, so the pair corresponding to $\alpha$ is $(i^{-1}(\beta^{-1}\mathfrak m), \beta'')$ . Conversely, if $(x, \psi : \mathcal{O}_{X, x}\to R)$ is a local ring homomorphism, then
+
 ```tikz
 \usepackage{tikz-cd}
 \usepackage{amsfonts}
@@ -50,4 +55,5 @@ where $\mathfrak m$ is the unique maximal ideal of $R$, so the pair correspondin
 \end{tikzcd}.
 \end{document}
 ```
+
 This gives us $\operatorname{Spec} R\to \operatorname{\Gamma(X)}\cong X$ needed.
