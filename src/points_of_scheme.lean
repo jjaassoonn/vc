@@ -330,6 +330,42 @@ def Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair :
     ((Γ.obj $ op X) →+* R)) ring_hom.target_local_ring_equiv)
   (point_local_ring_hom_pair_equiv _ _).symm
 
+namespace Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair
+
+lemma apply_pt (α : (Spec_obj $ CommRing.of R) ⟶ X) :
+  (Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair X R α).pt = 
+  X.iso_Spec.inv.1.base 
+    ⟨ideal.comap ((structure_sheaf.global_sections_iso R).inv.comp $ 
+      Scheme.hom.target_AffineScheme (Spec_obj $ CommRing.of R) X α) $ 
+      local_ring.maximal_ideal R, infer_instance⟩ :=
+begin 
+  dsimp only [Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair],
+  rw [equiv.trans_apply, equiv.trans_apply, 
+    point_local_ring_hom_pair_equiv_symm_apply, 
+    from_point_local_ring_hom_pair_pt, equiv.trans_apply, equiv.coe_fn_mk],
+  congr' 1,
+end
+
+lemma apply_ring_hom__apply (α : (Spec_obj $ CommRing.of R) ⟶ X) :
+  (Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair 
+    X R α).ring_hom_ = 
+  ((((inv (structure_sheaf.to_open R ⊤) : _ →+* _).comp $
+      Scheme.hom.target_AffineScheme (Spec_obj $ CommRing.of R) X 
+        α).factor_through_target_local_ring).comp $
+     (structure_sheaf.stalk_iso (Γ.obj $ op X)  
+        ⟨(local_ring.maximal_ideal R).comap _, _⟩).hom).comp 
+  (PresheafedSpace.stalk_map X.iso_Spec.inv.1 _) :=
+begin 
+  dsimp only [Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair,
+    equiv.trans_apply, point_local_ring_hom_pair_equiv_symm_apply,
+    from_point_local_ring_hom_pair_ring_hom_, structure_sheaf.stalk_iso_hom,
+    ring_hom.target_local_ring_equiv, equiv.coe_fn_mk],
+  simp only [CommRing_comp_eq_comp, category.assoc],
+  congr' 1,
+end
+
+end Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair
+
 end affine_cases
 
 section nonaffine_cases
