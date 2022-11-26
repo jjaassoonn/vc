@@ -800,6 +800,102 @@ begin
   rw map_one,
 end
 
+def target_local_ring_equiv' :
+  (A →+* R) ≃ local_ring.point_local_ring_hom_pair' A R :=
+{ to_fun := λ φ, quotient.mk'
+  { pt := ⟨(local_ring.maximal_ideal _).comap φ, infer_instance⟩,
+    localized_ring := localization.at_prime $ 
+      (local_ring.maximal_ideal _).comap φ,
+    comm_ring_localized_ring := infer_instance,
+    algebra_localized_ring := infer_instance,
+    is_localization := localization.is_localization,
+    ring_hom_ := φ.factor_through_target_local_ring,
+    is_local_ring_hom_ := infer_instance },
+  inv_fun := λ P, P.ring_hom_.comp $ algebra_map A _,
+  left_inv := λ φ, 
+  begin 
+    dsimp,
+    rw local_ring.point_local_ring_hom_pair'.mk_ring_hom_₂,
+    rw [ring_hom.comp_assoc],
+    conv_rhs { rw ←φ.target_local_ring_eq_comp_factors },
+    congr' 1,
+    ext : 1,
+    rw is_localization.map_comp,
+    refl,
+  end,
+  right_inv := λ P,
+  begin 
+    dsimp,
+    induction P using quotient.induction_on',
+    rw quotient.eq',
+    have pt_eq : (⟨ideal.comap
+      ((local_ring.point_local_ring_hom_pair'.ring_hom_ (quotient.mk' P)).comp
+          (algebra_map A (local_ring.point_local_ring_hom_pair'.localized_ring (quotient.mk' P))))
+        (local_ring.maximal_ideal R), infer_instance⟩ : prime_spectrum _) =
+      P.pt,
+    { dsimp, 
+      rw [local_ring.point_local_ring_hom_pair'.mk_ring_hom_₂',
+        ring_hom.comp_assoc, is_localization.map_comp, ring_hom.comp_id],
+      ext z : 2,
+      rw [subtype.coe_mk, ideal.mem_comap, local_ring.mem_maximal_ideal, 
+        mem_nonunits_iff],
+      split,
+      { contrapose!, rintros rid,
+        exact is_localization.is_unit_comp P.pt.as_ideal.prime_compl P.ring_hom_ 
+          ⟨z, rid⟩, },
+      { contrapose!, rintros rid,
+        rw [ring_hom.comp_apply] at rid,
+        have rid' := P.is_local_ring_hom_.map_nonunit _ rid,
+        resetI,
+        let x : P.localized_ring := ↑rid'.unit⁻¹,
+        obtain ⟨a, b, h⟩ := is_localization.mk'_surjective P.pt.as_ideal.prime_compl x,
+        have eq0 : algebra_map A P.localized_ring z 
+          = is_localization.mk' P.localized_ring z 1,
+        { rw is_localization.mk'_one, },
+        have eq1 : is_localization.mk' P.localized_ring z (1 : P.pt.as_ideal.prime_compl) * 
+            is_localization.mk' P.localized_ring a b 
+          = is_localization.mk' P.localized_ring 1 (1 : P.pt.as_ideal.prime_compl),
+        { rw [is_localization.mk'_one, h, is_unit.mul_coe_inv,
+            is_localization.mk'_one, map_one], },
+        work_on_goal 2 { exact P.pt.as_ideal.prime_compl },
+        work_on_goal 2 { apply_instance },
+        rw [←is_localization.mk'_mul, one_mul, 
+          is_localization.eq,
+          submonoid.coe_one, one_mul, 
+          mul_one] at eq1,
+        obtain ⟨c, hc⟩ := eq1,
+        have mem1 : (b * c : A) ∉ P.pt.as_ideal,
+        { exact submonoid.mul_mem _ b.2 c.2, },
+        rw ←hc at mem1,
+        rintros (rid2 : z ∈ P.pt.as_ideal),
+        refine mem1 (P.pt.as_ideal.mul_mem_right _ 
+          (P.pt.as_ideal.mul_mem_right _ rid2)), }, },
+    refine nonempty.intro ⟨pt_eq, _⟩,
+    { dsimp,
+      ext1 z,
+      obtain ⟨a, b, rfl⟩ := is_localization.mk'_surjective P.pt.as_ideal.prime_compl z,
+      simp only [ring_hom.comp_apply],
+      erw is_localization.map_mk',
+      dsimp only,
+      rw factor_through_target_local_ring_apply,
+      dsimp,
+      erw localization.lift_on_mk',
+      simp_rw [local_ring.point_local_ring_hom_pair'.mk_ring_hom_₂'],
+      rw [ring_hom.comp_apply, ←ring_hom.comp_apply _ (algebra_map A _),
+        is_localization.map_comp, ring_hom.comp_id, 
+        units.mul_inv_eq_iff_eq_mul],
+      erw [←map_mul],
+      congr' 1,
+      rw [←ring_hom.comp_apply, is_localization.map_comp, ring_hom.comp_id,
+        subtype.coe_mk],
+      rw [←is_localization.mk'_one P.localized_ring,  
+        ←is_localization.mk'_one P.localized_ring, 
+        ←is_localization.mk'_mul P.localized_ring, mul_one,
+        is_localization.eq],
+      refine ⟨1, _⟩,
+      simp only [submonoid.coe_one, mul_one], },
+  end }
+
 @[simps] def target_local_ring_equiv :
   (A →+* R) ≃ local_ring.point_local_ring_hom_pair A R :=
 { to_fun := λ φ, 
