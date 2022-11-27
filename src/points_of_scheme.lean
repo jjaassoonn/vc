@@ -222,6 +222,38 @@ begin
   erw [ring_equiv.symm_to_ring_hom_apply_to_ring_hom_apply, ring_hom.id_apply],
 end
 
+@[simps] 
+def stalk_iso_of_pt_eq (pt_eq : p.pt = q.pt) :
+  p.stalk_ ≃+* q.stalk_ :=
+p.stalk_iso.trans $ 
+ring_equiv.trans (CommRing.from_iso 
+{ hom := X.presheaf.stalk_specializes $ by rw pt_eq,
+  inv := X.presheaf.stalk_specializes $ by rw pt_eq,
+  hom_inv_id' := sorry,
+  inv_hom_id' := sorry }) q.stalk_iso.symm
+
+@[ext] lemma ext (pt_eq : p.pt = q.pt) 
+  (ring_hom_eq : 
+      p.ring_hom_.comp (p.stalk_iso_of_pt_eq _ pt_eq).symm.to_ring_hom 
+    = q.ring_hom_) : p = q :=
+begin 
+  induction p using quotient.induction_on',
+  induction q using quotient.induction_on',
+  rw quotient.eq',
+  rw [mk_pt_eq, mk_pt_eq] at pt_eq,
+  rw [mk_ring_hom_, mk_ring_hom_] at ring_hom_eq,
+  rw [ring_hom.comp_equiv_to_ring_hom_eq_iff, ring_hom.comp_assoc] at 
+    ring_hom_eq,
+  replace ring_hom_eq := ring_hom_eq.symm,
+  rw [←ring_hom.comp_equiv_to_ring_hom_eq_iff] at ring_hom_eq,
+  refine ⟨⟨pt_eq, _⟩⟩,
+  rw [←ring_hom_eq, ring_hom.comp_assoc, ring_hom.comp_assoc],
+  convert ring_hom.comp_id _,
+  rw [←ring_hom.comp_assoc, ring_hom.comp_equiv_to_ring_hom_eq_iff,
+    ring_hom.comp_equiv_to_ring_hom_eq_iff, ring_hom.id_comp],
+  sorry,
+end
+
 end point_local_ring_hom_pair'
 
 section
