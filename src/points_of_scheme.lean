@@ -3,6 +3,7 @@ import topology.sheaves.stalks
 
 import about_local_rings
 import target_affine_scheme
+import random_lemmas
 
 noncomputable theory
 
@@ -31,7 +32,18 @@ structure point_local_ring_hom_pair :=
 (ring_hom_ : X.presheaf.stalk pt →+* R)
 [is_local_ring_hom : is_local_ring_hom ring_hom_]
 
+structure point_local_ring_hom_pair'_aux :=
+(pt : X.carrier)
+(stalk_ : Type u)
+[comm_ring_stalk : comm_ring stalk_]
+(stalk_iso : stalk_ ≃+* X.presheaf.stalk pt)
+(ring_hom_ : stalk_ →+* R)
+[is_local_ring_hom : is_local_ring_hom ring_hom_]
+
 attribute [instance] point_local_ring_hom_pair.is_local_ring_hom
+attribute [instance] point_local_ring_hom_pair'_aux.comm_ring_stalk
+attribute [instance] point_local_ring_hom_pair'_aux.is_local_ring_hom
+
 
 @[ext] lemma point_local_ring_hom_pair_ext (P Q : point_local_ring_hom_pair X R)
   (hpt : P.pt = Q.pt)
@@ -63,6 +75,154 @@ begin
   ext : 1,
   refl,
 end
+
+namespace point_local_ring_hom_pair'_aux
+
+variables {X R} {p q r : point_local_ring_hom_pair'_aux X R}
+
+@[simps] def stalk_equiv_of_pt_eq (pt_eq : p.pt = q.pt) : p.stalk_ ≃+* q.stalk_ :=
+p.stalk_iso.trans $ ring_equiv.trans 
+(CommRing.from_iso 
+{ hom := X.presheaf.stalk_specializes (by rw [pt_eq]),
+  inv := X.presheaf.stalk_specializes (by rw [pt_eq]),
+  hom_inv_id' := 
+  begin 
+    apply stalk_hom_ext,
+    intros U hxU,
+    erw [←category.assoc, germ_stalk_specializes, germ_stalk_specializes,
+      category.comp_id],
+    refl,
+  end,
+  inv_hom_id' := 
+  begin 
+    apply stalk_hom_ext,
+    intros U hxU,
+    erw [←category.assoc, germ_stalk_specializes, germ_stalk_specializes,
+      category.comp_id],
+    refl,
+  end }) q.stalk_iso.symm
+
+lemma stalk_equiv_of_pt_eq.rfl_apply (x) :
+  stalk_equiv_of_pt_eq (rfl : p.pt = p.pt) x = x :=
+begin 
+  simp only [CommRing.from_iso_apply, iso.refl_hom, id_apply, 
+    stalk_equiv_of_pt_eq_apply],
+  obtain ⟨U, hU, s, eq0⟩ := X.presheaf.germ_exist p.pt (p.stalk_iso x),
+  rw [←eq0, germ_stalk_specializes'_apply],
+  apply_fun p.stalk_iso,
+  rw [ring_equiv.apply_symm_apply, ←eq0],
+  refl,
+
+  exact equiv_like.injective p.stalk_iso,
+end
+
+lemma stalk_equiv_of_pt_eq.symm (pt_eq : p.pt = q.pt) :
+  stalk_equiv_of_pt_eq pt_eq.symm = (stalk_equiv_of_pt_eq pt_eq).symm :=
+rfl
+
+lemma stalk_equiv_of_pt_eq.trans (h1 : p.pt = q.pt) (h2 : q.pt = r.pt) :
+  stalk_equiv_of_pt_eq (h1.trans h2) = 
+  (stalk_equiv_of_pt_eq h1).trans (stalk_equiv_of_pt_eq h2) :=
+begin 
+  ext,
+  delta stalk_equiv_of_pt_eq,
+  simp only [ring_equiv.coe_trans, function.comp_app, CommRing.from_iso_apply, 
+    ring_equiv.apply_symm_apply, embedding_like.apply_eq_iff_eq],
+  obtain ⟨U, hU, s, eq0⟩ := X.presheaf.germ_exist p.pt (p.stalk_iso x),
+  rw [←eq0, germ_stalk_specializes'_apply, germ_stalk_specializes'_apply,
+    germ_stalk_specializes'_apply],
+end
+
+variables (p q r)
+
+structure rel_aux :=
+(pt_eq : p.pt = q.pt)
+(ring_hom_eq : p.ring_hom_.comp (stalk_equiv_of_pt_eq pt_eq).symm.to_ring_hom 
+  = q.ring_hom_)
+
+@[simps] def rel_aux_rfl : rel_aux p p :=
+{ pt_eq := rfl,
+  ring_hom_eq := ring_hom.ext $ λ x, 
+  begin 
+    rw [ring_hom.comp_apply],
+    erw stalk_equiv_of_pt_eq.rfl_apply x,
+  end }
+
+@[simps] def rel_aux_symm (P : rel_aux p q) : rel_aux q p :=
+{ pt_eq := P.pt_eq.symm,
+  ring_hom_eq := by rw [ring_hom.comp_equiv_to_ring_hom_eq_iff, ←P.ring_hom_eq, 
+      ←stalk_equiv_of_pt_eq.symm] }
+
+@[simps] def rel_aux_trans (a : rel_aux p q) (b : rel_aux q r) :
+  rel_aux p r :=
+{ pt_eq := a.pt_eq.trans b.pt_eq,
+  ring_hom_eq := by rw [←b.ring_hom_eq, ←a.ring_hom_eq, ring_hom.comp_assoc, 
+      ←ring_equiv.to_ring_hom_trans, ←ring_equiv.symm_trans,
+      stalk_equiv_of_pt_eq.trans] }
+
+def rel : Prop := nonempty $ rel_aux p q
+
+@[refl] lemma rel_refl : rel p p := nonempty.intro $ rel_aux_rfl p
+@[symm] lemma rel_symm (h : rel p q) : rel q p := 
+nonempty.intro $ rel_aux_symm _ _ h.some
+@[trans] lemma rel_trans (h : rel p q) (h' : rel q r) : rel p r :=
+nonempty.intro $ rel_aux_trans _ _ _ h.some h'.some
+
+variables (X R)
+
+def setoid_ : setoid (point_local_ring_hom_pair'_aux X R) :=
+{ r := rel,
+  iseqv := ⟨rel_refl, rel_symm, rel_trans⟩ }
+
+end point_local_ring_hom_pair'_aux
+
+def point_local_ring_hom_pair' : Type (u+1) :=
+quotient (point_local_ring_hom_pair'_aux.setoid_ X R)
+
+namespace point_local_ring_hom_pair'
+
+variables {X R} (p q r : point_local_ring_hom_pair' X R)
+
+def pt : X.carrier := p.out'.pt
+
+def stalk_ : Type u := p.out'.stalk_
+
+instance comm_ring_stalk : comm_ring p.stalk_ := p.out'.comm_ring_stalk
+
+def stalk_iso : p.stalk_ ≃+* X.presheaf.stalk p.pt :=
+p.out'.stalk_iso
+
+def ring_hom_ : p.stalk_ →+* R :=
+p.out'.ring_hom_
+
+instance is_local_ring_hom : is_local_ring_hom p.ring_hom_ :=
+p.out'.is_local_ring_hom
+
+lemma mk_pt_eq (x : point_local_ring_hom_pair'_aux X R) : 
+  pt (quotient.mk' x) = x.pt :=
+begin 
+  obtain ⟨⟨pt_eq, _⟩⟩ := @quotient.mk_out' _ (point_local_ring_hom_pair'_aux.setoid_ X R) x,
+  exact pt_eq,
+end
+
+def mk_stalk_iso (x : point_local_ring_hom_pair'_aux X R) :
+  stalk_ (quotient.mk' x) ≃+* x.stalk_ :=
+point_local_ring_hom_pair'_aux.stalk_equiv_of_pt_eq $ mk_pt_eq x
+
+lemma mk_ring_hom_ (x : point_local_ring_hom_pair'_aux X R) :
+  ring_hom_ (quotient.mk' x) = 
+  x.ring_hom_.comp (mk_stalk_iso x).to_ring_hom :=
+begin
+  obtain ⟨⟨pt_eq, ring_hom_eq⟩⟩ := @quotient.mk_out' _ (point_local_ring_hom_pair'_aux.setoid_ X R) x,
+  rw [←ring_hom_eq, ring_hom.comp_assoc],
+  symmetry,
+  convert ring_hom.comp_id _,
+  delta mk_stalk_iso,
+  ext : 1,
+  erw [ring_equiv.symm_to_ring_hom_apply_to_ring_hom_apply, ring_hom.id_apply],
+end
+
+end point_local_ring_hom_pair'
 
 section
 
