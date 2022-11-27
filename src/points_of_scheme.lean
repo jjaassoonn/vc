@@ -205,9 +205,27 @@ begin
   exact pt_eq,
 end
 
-def mk_stalk_iso (x : point_local_ring_hom_pair'_aux X R) :
+@[simps] def mk_stalk_iso (x : point_local_ring_hom_pair'_aux X R) :
   stalk_ (quotient.mk' x) ≃+* x.stalk_ :=
 point_local_ring_hom_pair'_aux.stalk_equiv_of_pt_eq $ mk_pt_eq x
+
+lemma mk_stalk_iso.setoid_r {x y : point_local_ring_hom_pair'_aux X R}
+  (pt_eq : x.pt = y.pt) :
+    (mk_stalk_iso x).trans 
+      (point_local_ring_hom_pair'_aux.stalk_equiv_of_pt_eq pt_eq) 
+  = (point_local_ring_hom_pair'_aux.stalk_equiv_of_pt_eq $ 
+      show pt (quotient.mk' x) = pt (quotient.mk' y), 
+      by rw [mk_pt_eq, mk_pt_eq, pt_eq]).trans
+    (mk_stalk_iso y) :=
+begin 
+  ext z : 1,
+  dsimp,
+  rw [x.stalk_iso.apply_symm_apply, ring_equiv.apply_symm_apply],
+  generalize_proofs h1 h2 h3 h4 h5,
+  obtain ⟨U, hU, s, eq0⟩ := germ_exist _ _ (((quotient.mk' x).out'.stalk_iso) z),
+  rw [←eq0, germ_stalk_specializes'_apply, germ_stalk_specializes'_apply,
+    germ_stalk_specializes'_apply, germ_stalk_specializes'_apply],
+end
 
 lemma mk_ring_hom_ (x : point_local_ring_hom_pair'_aux X R) :
   ring_hom_ (quotient.mk' x) = 
@@ -240,18 +258,25 @@ begin
   induction p using quotient.induction_on',
   induction q using quotient.induction_on',
   rw quotient.eq',
-  rw [mk_pt_eq, mk_pt_eq] at pt_eq,
+  have pt_eq' : p.pt = q.pt,
+  { rwa [mk_pt_eq, mk_pt_eq] at pt_eq, },
   rw [mk_ring_hom_, mk_ring_hom_] at ring_hom_eq,
   rw [ring_hom.comp_equiv_to_ring_hom_eq_iff, ring_hom.comp_assoc] at 
     ring_hom_eq,
   replace ring_hom_eq := ring_hom_eq.symm,
   rw [←ring_hom.comp_equiv_to_ring_hom_eq_iff] at ring_hom_eq,
-  refine ⟨⟨pt_eq, _⟩⟩,
+  refine ⟨⟨pt_eq', _⟩⟩,
   rw [←ring_hom_eq, ring_hom.comp_assoc, ring_hom.comp_assoc],
   convert ring_hom.comp_id _,
-  rw [←ring_hom.comp_assoc, ring_hom.comp_equiv_to_ring_hom_eq_iff,
-    ring_hom.comp_equiv_to_ring_hom_eq_iff, ring_hom.id_comp],
-  sorry,
+  have := congr_arg (λ (r : _ ≃+* _), r.to_ring_hom) 
+    (mk_stalk_iso.setoid_r pt_eq'),
+  dsimp at this,
+  erw ←this,
+  rw [ring_hom.comp_assoc, ←ring_hom.comp_assoc _ _ (mk_stalk_iso p).to_ring_hom],
+  rw show (mk_stalk_iso p).to_ring_hom.comp (mk_stalk_iso p).symm.to_ring_hom 
+    = ring_hom.id _, from ring_equiv.to_ring_hom_comp_symm_to_ring_hom _,
+  rw [ring_hom.id_comp],
+  rw ring_equiv.to_ring_hom_comp_symm_to_ring_hom,
 end
 
 end point_local_ring_hom_pair'
