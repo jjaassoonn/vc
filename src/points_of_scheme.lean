@@ -22,30 +22,6 @@ open category_theory category_theory.concrete_category
 open algebraic_geometry
 
 variables (X : Scheme.{u}) (R : Type u) [comm_ring R] [local_ring R]
-
--- concrete
-@[simps] def stalk_iso_of_affine_aux [is_affine X] (pt : prime_spectrum $ Γ.obj $ op X)  : 
-    X.presheaf.stalk (X.iso_Spec.inv.1.base pt)
-  ≃+* localization.at_prime pt.as_ideal :=
-ring_equiv.trans 
-(CommRing.from_iso 
-{ hom := PresheafedSpace.stalk_map (X.iso_Spec.inv.1) _,
-  inv := stalk_specializes _ (by rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, 
-    Scheme.id_val_base, id_apply]) ≫ PresheafedSpace.stalk_map (X.iso_Spec.hom.1) _,
-  hom_inv_id' := sorry,
-  inv_hom_id' := sorry }) 
-{ to_fun := (structure_sheaf.stalk_iso _ _).hom,
-  inv_fun := (structure_sheaf.stalk_iso _ _).inv,
-  left_inv := λ x, by erw [←comp_apply, iso.hom_inv_id, id_apply],
-  right_inv := λ x, by erw [←comp_apply, iso.inv_hom_id, id_apply],
-  map_mul' := map_mul _,
-  map_add' := map_add _ }
-
-def stalk_iso_of_affine_aux' [is_affine X] (x : X.carrier) : 
-    X.presheaf.stalk x
-  ≃+* localization.at_prime (X.iso_Spec.hom.1.base x).as_ideal :=
-sorry
-
 variable (f : Spec_obj (CommRing.of R) ⟶ X)
 
 instance : local_ring (CommRing.of R) := 
@@ -74,7 +50,7 @@ variables [is_affine X] (P : point_local_ring_hom_pair'_aux X R)
 
 instance stalk_algebra : algebra (Γ.obj $ op X) P.stalk_ :=
 ring_hom.to_algebra $ P.stalk_iso.symm.to_ring_hom.comp $ 
-  (stalk_iso_of_affine_aux' X P.pt).symm.to_ring_hom.comp $ 
+  (stalk_iso_of_affine' X P.pt).symm.to_ring_hom.comp $ 
   @@algebra_map (Γ.obj $ op X) (localization.at_prime _) _ _ 
   begin 
     dsimp,
@@ -95,7 +71,16 @@ instance stalk_is_localization :
     rw localization.at_prime.mk_is_unit_iff,
     exact y.2,
   end,
-  surj := sorry,
+  surj := λ z, 
+  begin 
+    let z' := P.stalk_iso z,
+    have eq0 : P.stalk_iso.symm.to_ring_hom z' = z,
+    { erw [ring_equiv.symm_apply_apply] },
+    simp_rw [ring_hom.algebra_map_to_algebra, ←eq0, ring_hom.comp_apply, 
+      ←map_mul],
+    sorry
+    -- have := localization.is_localization.surj,
+  end,
   eq_iff_exists := sorry }
 
 end point_local_ring_hom_pair'_aux
@@ -615,7 +600,7 @@ def Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair :
 
 instance is_global_section_algebra (pt : prime_spectrum $ Γ.obj $ op X) : 
   algebra (Γ.obj $ op X) (X.presheaf.stalk (X.iso_Spec.inv.1.base pt)) :=
-ring_hom.to_algebra $ ((stalk_iso_of_affine_aux X pt).symm.to_ring_hom).comp $
+ring_hom.to_algebra $ ((stalk_iso_of_affine X pt).symm.to_ring_hom).comp $
   algebra_map _ _
 
 instance is_localization_stalk (pt : prime_spectrum $ Γ.obj $ op X) :
@@ -632,11 +617,11 @@ instance is_localization_stalk (pt : prime_spectrum $ Γ.obj $ op X) :
   surj := λ z, 
   begin 
     simp_rw [ring_hom.algebra_map_to_algebra, ring_hom.comp_apply],
-    let z' := stalk_iso_of_affine_aux X pt z,
+    let z' := stalk_iso_of_affine X pt z,
     obtain ⟨⟨a, b⟩, EQ⟩:= localization.is_localization.surj z',
     rw [←localization.mk_algebra_map, algebra.algebra_map_self, ring_hom.id_apply,
       ←localization.mk_algebra_map] at EQ,
-    have eq0 : z = (stalk_iso_of_affine_aux X pt).symm.to_ring_hom z',
+    have eq0 : z = (stalk_iso_of_affine X pt).symm.to_ring_hom z',
     { erw ring_equiv.apply_symm_apply, },
     simp_rw [eq0, ←map_mul, ←localization.mk_algebra_map, algebra.algebra_map_self,
       ring_hom.id_apply],
@@ -649,7 +634,7 @@ instance is_localization_stalk (pt : prime_spectrum $ Γ.obj $ op X) :
       ring_hom.comp_apply, function.injective.eq_iff _,
       localization.is_localization.eq_iff_exists],
     rw function.injective_iff_has_left_inverse,
-    refine ⟨(stalk_iso_of_affine_aux X pt).to_ring_hom, λ z, _⟩,
+    refine ⟨(stalk_iso_of_affine X pt).to_ring_hom, λ z, _⟩,
     rw [←ring_hom.comp_apply, ring_equiv.to_ring_hom_comp_symm_to_ring_hom,
       ring_hom.id_apply],
   end }

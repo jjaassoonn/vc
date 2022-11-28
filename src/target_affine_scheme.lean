@@ -23,6 +23,30 @@ variables (X Y : Scheme.{u}) [is_affine Y]
 
 namespace Scheme
 
+
+-- concrete
+@[simps] def stalk_iso_of_affine (pt : prime_spectrum $ Γ.obj $ op Y)  : 
+    Y.presheaf.stalk (Y.iso_Spec.inv.1.base pt)
+  ≃+* localization.at_prime pt.as_ideal :=
+ring_equiv.trans 
+(CommRing.from_iso 
+{ hom := PresheafedSpace.stalk_map (Y.iso_Spec.inv.1) _,
+  inv := stalk_specializes _ (by rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, 
+    Scheme.id_val_base, id_apply]) ≫ PresheafedSpace.stalk_map (Y.iso_Spec.hom.1) _,
+  hom_inv_id' := sorry,
+  inv_hom_id' := sorry }) 
+{ to_fun := (structure_sheaf.stalk_iso _ _).hom,
+  inv_fun := (structure_sheaf.stalk_iso _ _).inv,
+  left_inv := λ x, by erw [←comp_apply, iso.hom_inv_id, id_apply],
+  right_inv := λ x, by erw [←comp_apply, iso.inv_hom_id, id_apply],
+  map_mul' := map_mul _,
+  map_add' := map_add _ }
+
+def stalk_iso_of_affine' (x : Y.carrier) : 
+    Y.presheaf.stalk x
+  ≃+* localization.at_prime (Y.iso_Spec.hom.1.base x).as_ideal :=
+sorry
+
 instance gloabl_sections_algebra (y : Y.carrier) :
   algebra (Scheme.Γ.obj $ op Y) $ Y.presheaf.stalk y :=
 ring_hom.to_algebra $ ring_hom.comp 
@@ -47,13 +71,18 @@ instance stalk_is_localization (y : Y.carrier) :
   end,
   surj := λ z,
   begin 
-    rw [ring_hom.algebra_map_to_algebra],
-    let z' := (stalk_specializes _ _ ≫ PresheafedSpace.stalk_map Y.iso_Spec.inv.1
-      (Y.iso_Spec.hom.1 y)) z,
-    work_on_goal 2
-    { erw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, 
-        id_apply], },
-    sorry
+    simp_rw [ring_hom.algebra_map_to_algebra, ←ring_hom.comp_assoc],
+    let z' : localization.at_prime (Y.iso_Spec.hom.val.base y).as_ideal := sorry,
+    have eq0 : z = (PresheafedSpace.stalk_map Y.iso_Spec.hom.val y).comp
+      (structure_sheaf.stalk_iso (Γ.obj $ op Y) ((Y.iso_Spec.hom.val.base) y)).inv z',
+    { sorry },
+    simp_rw [eq0, ring_hom.comp_apply, ←map_mul],
+    obtain ⟨⟨a, b⟩, eq1⟩ := localization.is_localization.surj z',
+    refine ⟨⟨a, b⟩, _⟩,
+    dsimp at eq1 ⊢,
+    congr' 1,
+    erw ←eq1,
+    rw [map_mul],
   end,
   eq_iff_exists := sorry }
 
