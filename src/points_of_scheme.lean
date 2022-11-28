@@ -558,7 +558,7 @@ def Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair :
         by { dsimp only, rw [ring_hom.comp_apply, ring_hom.comp_apply],
           erw (structure_sheaf.global_sections_iso _).hom_inv_id_apply, } } : 
     (Γ.obj (op X) ⟶ Γ.obj (op $ Spec_obj $ CommRing.of R)) ≃ 
-    ((Γ.obj $ op X) →+* R)) $ ring_hom.target_local_ring_equiv _ _)
+    ((Γ.obj $ op X) →+* R)) $ ring_hom.target_local_ring_equiv)
   (point_local_ring_hom_pair_equiv _ _).symm
 
 
@@ -669,20 +669,7 @@ def Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair' :
       ((Γ.obj $ op X) →+* R)) $ 
     equiv.trans 
       (ring_hom.target_local_ring_equiv' R (Γ.obj $ op X)) $
-      _
---  equiv.trans 
---   (equiv.trans 
---     ({ to_fun := λ a, (structure_sheaf.global_sections_iso _).inv.comp a,
---       inv_fun := λ a, (structure_sheaf.global_sections_iso _).hom.comp a,
---       left_inv := λ a, ring_hom.ext $ λ z, 
---         by { dsimp only, rw [ring_hom.comp_apply, ring_hom.comp_apply], 
---           erw (structure_sheaf.global_sections_iso _).inv_hom_id_apply,  },
---       right_inv := λ a, ring_hom.ext $ λ z, 
---         by { dsimp only, rw [ring_hom.comp_apply, ring_hom.comp_apply],
---           erw (structure_sheaf.global_sections_iso _).hom_inv_id_apply, } } : 
---     (Γ.obj (op X) ⟶ Γ.obj (op $ Spec_obj $ CommRing.of R)) ≃ 
---     ((Γ.obj $ op X) →+* R)) ring_hom.target_local_ring_equiv)
---   (point_local_ring_hom_pair_equiv _ _).symm
+      sorry
 
 namespace Spec_local_ring_to_AffineScheme_equiv_point_local_ring_hom_pair
 
