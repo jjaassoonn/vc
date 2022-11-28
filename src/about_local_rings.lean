@@ -800,6 +800,8 @@ begin
   rw map_one,
 end
 
+variables (A R)
+
 def target_local_ring_equiv' :
   (A →+* R) ≃ local_ring.point_local_ring_hom_pair' A R :=
 { to_fun := λ φ, quotient.mk'

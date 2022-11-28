@@ -40,33 +40,9 @@ variables [comm_ring R] [comm_ring R']
 variables [comm_ring X] [comm_ring X'] [algebra R X]
 
 @[simps] def of_equiv' (i : R ≃+* R') [algebra R X] : algebra R' X :=
-{ smul := λ r x, i.symm r • x,
-  commutes' := λ r x,
-  begin 
-    dsimp only,
-    rw mul_comm
-  end,
-  smul_def' := λ r x, 
-  begin 
-    dsimp only,
-    rw [smul_def],
-    refl,
-  end,
-  ..(algebra_map R X).comp i.symm.to_ring_hom }
+ring_hom.to_algebra $ (algebra_map _ _).comp i.symm.to_ring_hom
 
 @[simps] def of_equiv (i : X ≃+* X') [algebra R X] : algebra R X' :=
-{ smul := λ r x, i $ r • i.symm x,
-  commutes' := λ r x, 
-  begin 
-    dsimp only,
-    rw mul_comm,
-  end,
-  smul_def' := λ r x, 
-  begin 
-    dsimp only [],
-    rw [smul_def, map_mul, ring_equiv.apply_symm_apply],
-    congr,
-  end,
-  ..i.to_ring_hom.comp (algebra_map R X) }
+ring_hom.to_algebra $ i.to_ring_hom.comp (algebra_map R X)
 
 end algebra
