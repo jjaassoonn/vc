@@ -25,16 +25,17 @@ namespace Scheme
 
 
 -- concrete
-@[simps] def stalk_iso_of_affine (pt : prime_spectrum $ Γ.obj $ op Y)  : 
+def stalk_iso_of_affine (pt : prime_spectrum $ Γ.obj $ op Y)  : 
     Y.presheaf.stalk (Y.iso_Spec.inv.1.base pt)
   ≃+* localization.at_prime pt.as_ideal :=
 ring_equiv.trans 
-(CommRing.from_iso 
-{ hom := PresheafedSpace.stalk_map (Y.iso_Spec.inv.1) _,
-  inv := stalk_specializes _ (by rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, 
+{ to_fun := PresheafedSpace.stalk_map (Y.iso_Spec.inv.1) _,
+  inv_fun := stalk_specializes _ (by rw [←Scheme.comp_val_base_apply, iso.inv_hom_id, 
     Scheme.id_val_base, id_apply]) ≫ PresheafedSpace.stalk_map (Y.iso_Spec.hom.1) _,
-  hom_inv_id' := sorry,
-  inv_hom_id' := sorry }) 
+  left_inv := sorry,
+  right_inv := sorry,
+  map_add' := map_add _,
+  map_mul' := map_mul _ }
 { to_fun := (structure_sheaf.stalk_iso _ _).hom,
   inv_fun := (structure_sheaf.stalk_iso _ _).inv,
   left_inv := λ x, by erw [←comp_apply, iso.hom_inv_id, id_apply],
@@ -42,10 +43,37 @@ ring_equiv.trans
   map_mul' := map_mul _,
   map_add' := map_add _ }
 
-def stalk_iso_of_affine' (x : Y.carrier) : 
-    Y.presheaf.stalk x
-  ≃+* localization.at_prime (Y.iso_Spec.hom.1.base x).as_ideal :=
-sorry
+def stalk_iso_of_affine' (y : Y.carrier) : 
+    Y.presheaf.stalk y
+  ≃+* localization.at_prime (Y.iso_Spec.hom.1.base y).as_ideal :=
+ring_equiv.trans 
+({ to_fun := Y.presheaf.stalk_specializes $ 
+    by rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, id_apply],
+  inv_fun := Y.presheaf.stalk_specializes $ 
+    by rw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, id_apply],
+  left_inv := λ x,
+  begin 
+    rw [←comp_apply],
+    convert id_apply x,
+    refine stalk_hom_ext Y.presheaf _,
+    intros,
+    rw [germ_stalk_specializes_assoc, germ_stalk_specializes], 
+    erw [category.comp_id],
+    refl,
+  end,
+  right_inv := λ x,
+  begin 
+    simp_rw [←comp_apply],
+    convert id_apply x,
+    refine stalk_hom_ext Y.presheaf (λ U hy, _),
+    rw [germ_stalk_specializes'_assoc, germ_stalk_specializes],
+    erw category.comp_id,
+    refl,
+  end,
+  map_mul' := map_mul _,
+  map_add' := map_add _ } : Y.presheaf.stalk y ≃+* 
+    Y.presheaf.stalk (Y.iso_Spec.inv.1.base $ Y.iso_Spec.hom.1.base y)) $
+  stalk_iso_of_affine Y _
 
 instance gloabl_sections_algebra (y : Y.carrier) :
   algebra (Scheme.Γ.obj $ op Y) $ Y.presheaf.stalk y :=
@@ -72,10 +100,18 @@ instance stalk_is_localization (y : Y.carrier) :
   surj := λ z,
   begin 
     simp_rw [ring_hom.algebra_map_to_algebra, ←ring_hom.comp_assoc],
-    let z' : localization.at_prime (Y.iso_Spec.hom.val.base y).as_ideal := sorry,
+    set z' : localization.at_prime (Y.iso_Spec.hom.val.base y).as_ideal := 
+      (stalk_iso_of_affine' Y y) z with z'_eq,
     have eq0 : z = (PresheafedSpace.stalk_map Y.iso_Spec.hom.val y).comp
       (structure_sheaf.stalk_iso (Γ.obj $ op Y) ((Y.iso_Spec.hom.val.base) y)).inv z',
-    { sorry },
+    { rw [z'_eq],
+      delta stalk_iso_of_affine',
+      rw [ring_equiv.trans_apply, ring_equiv.coe_mk],
+      delta stalk_iso_of_affine,
+      rw [ring_equiv.trans_apply, ring_equiv.coe_mk, ring_equiv.coe_mk],
+      have := PresheafedSpace.stalk_map.stalk_specializes_stalk_map_apply 
+        Y.iso_Spec.inv.1,
+      sorry },
     simp_rw [eq0, ring_hom.comp_apply, ←map_mul],
     obtain ⟨⟨a, b⟩, eq1⟩ := localization.is_localization.surj z',
     refine ⟨⟨a, b⟩, _⟩,

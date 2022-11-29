@@ -2,6 +2,8 @@ import ring_theory.ideal.local_ring
 import ring_theory.localization.at_prime
 import algebraic_geometry.prime_spectrum.basic
 
+import random_lemmas
+
 noncomputable theory
 
 universe u
@@ -144,471 +146,49 @@ lemma maximal_ideal_is' :
 
 end localization.at_prime
 
-namespace local_ring
-
-variables (A R : Type u) [comm_ring A] [comm_ring R] [local_ring R]
-
-structure point_local_ring_hom_pair :=
-(pt : prime_spectrum A)
-(ring_hom_ : localization.at_prime pt.as_ideal →+* R)
-[is_local_ring_hom_ : is_local_ring_hom ring_hom_]
-
-structure point_local_ring_hom_pair'_aux :=
-(pt : prime_spectrum A)
-(localized_ring : Type u)
-[comm_ring_localized_ring : comm_ring localized_ring]
-[algebra_localized_ring : algebra A localized_ring]
-[is_localization : is_localization.at_prime localized_ring pt.as_ideal]
-(ring_hom_ : localized_ring →+* R)
-[is_local_ring_hom_ : is_local_ring_hom ring_hom_]
-
-attribute [instance] point_local_ring_hom_pair.is_local_ring_hom_
-attribute [instance] point_local_ring_hom_pair'_aux.comm_ring_localized_ring
-attribute [instance] point_local_ring_hom_pair'_aux.algebra_localized_ring
-attribute [instance] point_local_ring_hom_pair'_aux.is_localization
-attribute [instance] point_local_ring_hom_pair'_aux.is_local_ring_hom_
-
-@[ext] lemma point_local_ring_hom_pair_ext (α β : point_local_ring_hom_pair A R)
-  (h1 : α.pt = β.pt) 
-  (h2 : α.ring_hom_.comp (localization.local_ring_hom _ _ (ring_hom.id _) $ by rw [ideal.comap_id, h1]) = β.ring_hom_) :
-  α = β :=
-begin 
-  obtain ⟨pt, f, h⟩ := α,
-  obtain ⟨pt', f', h'⟩ := β,
-  dsimp at *,
-  subst h1,
-  congr,
-  rw [←h2, localization.local_ring_hom_id, ring_hom.comp_id],
-end
-
-namespace point_local_ring_hom_pair'_aux
-
-variables {A R}
-
-@[simps] def localized_ring_equiv_of_pt_eq {α β : point_local_ring_hom_pair'_aux A R}
-  (pt_eq : α.pt = β.pt) : 
-  α.localized_ring ≃+* β.localized_ring :=
-{ to_fun := @is_localization.map A _ α.pt.as_ideal.prime_compl α.localized_ring
-    _ _ A _ _ β.pt.as_ideal.prime_compl β.localized_ring _ _ _ (ring_hom.id _) $
-    by { erw submonoid.comap_id, rw pt_eq, exact le_refl _, },
-  inv_fun := @is_localization.map A _ β.pt.as_ideal.prime_compl β.localized_ring
-    _ _ A _ _ α.pt.as_ideal.prime_compl α.localized_ring _ _ _ (ring_hom.id _) $
-    by { erw submonoid.comap_id, rw pt_eq, exact le_refl _, },
-  left_inv := λ x, 
-  begin
-    rw [←ring_hom.comp_apply, is_localization.map_comp_map],
-    simp only [ring_hom_inv_pair.comp_eq₂, is_localization.map_id],
-  end,
-  right_inv := λ x,
-  begin 
-    rw [←ring_hom.comp_apply, is_localization.map_comp_map],
-    simp only [ring_hom_inv_pair.comp_eq₂, is_localization.map_id],
-  end,
-  map_mul' := map_mul _,
-  map_add' := map_add _ }
-
-@[simps] def localized_ring_alg_equiv_of_pt_eq {α β : point_local_ring_hom_pair'_aux A R}
-  (pt_eq : α.pt = β.pt) :
-  α.localized_ring ≃ₐ[A] β.localized_ring :=
-{ commutes' := λ a, 
-  begin
-    dsimp,
-    rw [←ring_hom.comp_apply, is_localization.map_comp, ring_hom.comp_id],
-  end,
-  ..localized_ring_equiv_of_pt_eq pt_eq}
-
-structure rel_aux (α β : point_local_ring_hom_pair'_aux A R) :=
-(pt_eq : α.pt = β.pt)
-(ring_hom_comp_eq : 
-    α.ring_hom_.comp
-      (localized_ring_equiv_of_pt_eq pt_eq).symm.to_ring_hom
-  = β.ring_hom_)
-
-@[reducible] def rel (α β : point_local_ring_hom_pair'_aux A R) : Prop :=
-nonempty $ rel_aux α β
-
-@[refl] lemma rel_refl (α : point_local_ring_hom_pair'_aux A R) :
-  rel α α := nonempty.intro
-{ pt_eq := rfl,
-  ring_hom_comp_eq := ring_hom.ext $ λ x, by erw [ring_hom.comp_apply, 
-    localized_ring_equiv_of_pt_eq_symm_apply, is_localization.map_id] }
-
-@[trans] lemma rel_trans (α β γ : point_local_ring_hom_pair'_aux A R)
-  (hαβ : rel α β) (hβγ : rel β γ) : rel α γ :=
-begin 
-  unfreezingI 
-  { rcases hαβ with ⟨h1, h1'⟩,
-    rcases hβγ with ⟨h2, h2'⟩ },
-  refine ⟨⟨h1.trans h2, _⟩⟩,
-  rw [←h2', ←h1', ring_hom.comp_assoc],
-  refine congr_arg _ _,
-  ext x : 1,
-  generalize_proofs H1,
-  erw [ring_hom.comp_apply, ring_equiv.to_ring_hom_eq_coe, 
-    ring_equiv.to_ring_hom_eq_coe, ring_equiv.to_ring_hom_eq_coe, 
-    localized_ring_equiv_of_pt_eq_symm_apply H1 x,
-    localized_ring_equiv_of_pt_eq_symm_apply h2 x,
-    localized_ring_equiv_of_pt_eq_symm_apply h1, ←ring_hom.comp_apply,
-    is_localization.map_comp_map],
-  congr' 1,
-end
-
-@[symm] lemma rel_symm (α β : point_local_ring_hom_pair'_aux A R) (h : rel α β) :
-  rel β α := nonempty.intro
-{ pt_eq := h.some.pt_eq.symm,
-  ring_hom_comp_eq := 
-  begin
-    rw [←h.some.ring_hom_comp_eq, ring_hom.comp_assoc],
-    convert ring_hom.comp_id _,
-    ext : 1,
-    generalize_proofs h1 h2,
-    erw [ring_hom.comp_apply, localized_ring_equiv_of_pt_eq_symm_apply h2,
-      localized_ring_equiv_of_pt_eq_symm_apply h1, ←ring_hom.comp_apply],
-    congr' 1,
-    convert is_localization.map_comp_map _ _,
-    ext y : 1,
-    simp only [ring_hom.id_apply, ring_hom_inv_pair.comp_eq₂, 
-      is_localization.map_id],
-  end }
-
-variables (A R)
-
-@[simps] def setoid_ : setoid (point_local_ring_hom_pair'_aux A R) :=
-{ r := rel,
-  iseqv := ⟨rel_refl, rel_symm, rel_trans⟩ }
-
-variables {A R} 
-variables (a b : point_local_ring_hom_pair'_aux A R) (h : (setoid_ A R).r a b)
-
-lemma setoid_.r_pt_eq : a.pt = b.pt := h.some.pt_eq
-
-lemma setoid_.r_ring_hom_comp_eq : 
-    a.ring_hom_.comp 
-      (localized_ring_equiv_of_pt_eq $ 
-        point_local_ring_hom_pair'_aux.setoid_.r_pt_eq _ _ h).symm.to_ring_hom 
-  = b.ring_hom_ :=
-h.some.ring_hom_comp_eq
-
-end point_local_ring_hom_pair'_aux
-
-def point_local_ring_hom_pair' : Type (u+1) := 
-  quotient $ point_local_ring_hom_pair'_aux.setoid_ A R
-
-namespace point_local_ring_hom_pair'
-
-open point_local_ring_hom_pair
-
-variables {A R} (a b : point_local_ring_hom_pair' A R)
-
-def pt : prime_spectrum A := 
-a.out'.pt
-
-lemma mk_pt_eq (p : prime_spectrum A) (M : Type u) [comm_ring M] [algebra A M] 
-  [is_localization.at_prime M p.as_ideal] (f : M →+* R) [is_local_ring_hom f] :
-  pt (quotient.mk' (⟨p, M, f⟩) : point_local_ring_hom_pair' A R) = p :=
-point_local_ring_hom_pair'_aux.setoid_.r_pt_eq _ _ (quotient.mk_out' _)
-
-lemma mk_pt_eq' (a' : point_local_ring_hom_pair'_aux A R) :
-  pt (quotient.mk' a') = a'.pt :=
-point_local_ring_hom_pair'_aux.setoid_.r_pt_eq _ _ (quotient.mk_out' _)
-
-lemma pt_eq (h : a = b) : a.pt = b.pt :=
-begin 
-  induction a using quotient.induction_on',
-  induction b using quotient.induction_on',
-  rcases a with ⟨pt, M, f⟩,
-  rcases b with ⟨pt', M', f'⟩,
-  resetI,
-  rw [mk_pt_eq, mk_pt_eq],
-  rw quotient.eq' at h,
-  rcases h with ⟨h1, h2⟩,
-  exact h1,
-end 
-
-def localized_ring : Type u :=
-a.out'.localized_ring
-
-instance comm_ring_is_localized_ring : comm_ring a.localized_ring :=
-a.out'.comm_ring_localized_ring
-
-instance algebra_localized_ring : algebra A a.localized_ring :=
-a.out'.algebra_localized_ring
-
-instance is_localization : 
-  is_localization.at_prime a.localized_ring a.pt.as_ideal :=
-a.out'.is_localization
-
-def ring_hom_ :
-  a.localized_ring →+* R :=
-a.out'.ring_hom_
-
-instance is_local_ring_hom_ : is_local_ring_hom a.ring_hom_ :=
-a.out'.is_local_ring_hom_
-
-lemma mk_ring_hom_ (p : prime_spectrum A) (M : Type u) [comm_ring M] 
-  [algebra A M] [is_localization.at_prime M p.as_ideal] 
-  (f : M →+* R) [is_local_ring_hom f] :
-    (ring_hom_ (quotient.mk' ⟨p, M, f⟩)).comp 
-      (begin 
-        haveI : is_localization.at_prime
-          (localized_ring (quotient.mk' (point_local_ring_hom_pair'_aux.mk p M f)))
-          p.as_ideal ,
-        { convert point_local_ring_hom_pair'.is_localization _,
-          rw mk_pt_eq', },
-        refine @is_localization.map A _ p.as_ideal.prime_compl M _ _ A _
-          _ p.as_ideal.prime_compl _ _ _ _ (ring_hom.id A) 
-            (by erw [submonoid.comap_id]; exact le_refl _),
-      end : M →+* localized_ring (quotient.mk' (point_local_ring_hom_pair'_aux.mk p M f)))
-  = f :=
-begin
-  haveI : is_localization.at_prime
-    (localized_ring (quotient.mk' (point_local_ring_hom_pair'_aux.mk p M f)))
-    p.as_ideal ,
-  { convert point_local_ring_hom_pair'.is_localization _,
-    rw mk_pt_eq', },
-  exact point_local_ring_hom_pair'_aux.setoid_.r_ring_hom_comp_eq
-    (quotient.out' $ quotient.mk' (⟨p, M, f⟩ : point_local_ring_hom_pair'_aux A R))
-    ⟨p, M, f⟩ (quotient.mk_out' _),
-end
-
-lemma mk_ring_hom_₂ (p : prime_spectrum A) (M : Type u) [comm_ring M] 
-  [algebra A M] [is_localization.at_prime M p.as_ideal] 
-  (f : M →+* R) [is_local_ring_hom f] :
-    (ring_hom_ (quotient.mk' ⟨p, M, f⟩))
-  = f.comp 
-    (begin
-      haveI : is_localization p.as_ideal.prime_compl 
-        (localized_ring 
-          (quotient.mk' (point_local_ring_hom_pair'_aux.mk p M f))),
-      { convert point_local_ring_hom_pair'.is_localization _,
-        rw mk_pt_eq', },
-      refine @is_localization.map A _ p.as_ideal.prime_compl 
-        (localized_ring (quotient.mk' ⟨p, M, f⟩)) _ _ _ _ _ p.as_ideal.prime_compl _ _ _ _ (ring_hom.id A) 
-        (by erw [submonoid.comap_id]; exact le_refl _),
-    end) :=
-begin
-  simp_rw ←mk_ring_hom_ p M f,
-  rw [ring_hom.comp_assoc],
-  convert (ring_hom.comp_id _).symm,
-  rw [is_localization.map_comp_map],
-  ext : 1,
-  simp only [ring_hom_inv_pair.comp_eq₂, is_localization.map_id, ring_hom.id_apply],
-end
-
-lemma mk_ring_hom_' (α : point_local_ring_hom_pair'_aux A R) :
-    (ring_hom_ (quotient.mk' α)).comp 
-    begin 
-      haveI : is_localization.at_prime
-        (localized_ring (quotient.mk' α))
-        α.pt.as_ideal ,
-      { refine @@is_localization.is_localization_of_alg_equiv _ _ _ _ _ _ 
-          α.is_localization _,
-        refine point_local_ring_hom_pair'_aux.localized_ring_alg_equiv_of_pt_eq 
-          _,
-        exact (mk_pt_eq' α).symm, },
-      refine @is_localization.map A _ α.pt.as_ideal.prime_compl α.localized_ring 
-        _ _ A _
-        _ α.pt.as_ideal.prime_compl _ _ _ _ (ring_hom.id A) 
-          (by erw [submonoid.comap_id]; exact le_refl _),
-    end 
-  = α.ring_hom_ :=
-by rcases α; apply mk_ring_hom_
-
-lemma mk_ring_hom_₂' (α : point_local_ring_hom_pair'_aux A R) :
-    (ring_hom_ (quotient.mk' α)) 
-  = α.ring_hom_.comp 
-  (begin
-    haveI : is_localization α.pt.as_ideal.prime_compl 
-      (localized_ring (quotient.mk' α)),
-    { refine @@is_localization.is_localization_of_alg_equiv _ _ _ _ _ _ 
-        α.is_localization _,
-      refine point_local_ring_hom_pair'_aux.localized_ring_alg_equiv_of_pt_eq 
-        _,
-      exact (mk_pt_eq' α).symm, },
-    refine @is_localization.map A _ α.pt.as_ideal.prime_compl 
-      (localized_ring (quotient.mk' α)) _ _ _ _ _ α.pt.as_ideal.prime_compl _ _ _ _ (ring_hom.id A) 
-      (by erw [submonoid.comap_id]; exact le_refl _),
-    end)  :=
-by rcases α; apply mk_ring_hom_₂
-
-lemma ring_hom_comp_eq (h : a = b) :
-    a.ring_hom_.comp 
-    (point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq 
-      (begin 
-        induction a using quotient.induction_on',
-        induction b using quotient.induction_on',
-        rw h,
-      end : a.pt = b.pt)).symm.to_ring_hom
-  = b.ring_hom_ :=
-begin
-  subst h,
-  induction a using quotient.induction_on',
-  convert ring_hom.comp_id _,
-  ext x : 1,
-  dsimp,
-  erw point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq_apply,
-  simp only [is_localization.map_id],
-  refl,
-end
-
-lemma ring_hom_comp_eq₂ (h : a = b) :
-    a.ring_hom_
-  = b.ring_hom_.comp 
-    (point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq 
-      (begin 
-        induction a using quotient.induction_on',
-        induction b using quotient.induction_on',
-        rw h,
-      end : a.pt = b.pt)).to_ring_hom :=
-begin
-  subst h,
-  induction a using quotient.induction_on',
-  convert ring_hom.comp_id _,
-  ext x : 1,
-  dsimp,
-  erw point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq_apply,
-  simp only [is_localization.map_id],
-end
-
-@[ext] lemma ext 
-  (h1 : a.pt = b.pt) 
-  (h2 : a.ring_hom_.comp 
-      (point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq 
-        h1).symm.to_ring_hom 
-    = b.ring_hom_) : a = b :=
-begin
-  rcases a with ⟨pt, M, f⟩,
-  rcases b with ⟨pt', M', f'⟩,
-  resetI,
-  have h1' : pt = pt',
-  { erw [mk_pt_eq', mk_pt_eq'] at h1,
-    exact h1, },
-  erw quotient.eq',
-  refine nonempty.intro ⟨h1', _⟩,
-  dsimp,
-  simp_rw [←mk_ring_hom_ pt M f, ←mk_ring_hom_ pt' M' f'],
-  erw ←h2,
-  simp only [ring_hom.comp_assoc],
-  congr' 1,
-  ext : 1,
-  dsimp,
-  generalize_proofs h1 h2 h3 h4 h5 h6,
-  erw point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq_symm_apply
-    (_ : (point_local_ring_hom_pair'_aux.mk pt M f).pt = 
-      (point_local_ring_hom_pair'_aux.mk pt' M' f').pt) x,
-  rw [←ring_hom.comp_apply, is_localization.map_comp_map],
-  simp only [ring_hom_inv_pair.comp_eq₂],
-  erw point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq_symm_apply,
-  swap, dsimp, rw ←h1', exact mk_pt_eq pt M f,
-  erw point_local_ring_hom_pair'_aux.localized_ring_equiv_of_pt_eq_symm_apply 
-    (_ : local_ring.point_local_ring_hom_pair'.pt 
-        (quotient.mk' (point_local_ring_hom_pair'_aux.mk pt M f)) 
-      = local_ring.point_local_ring_hom_pair'.pt 
-          (quotient.mk' (point_local_ring_hom_pair'_aux.mk pt' M' f'))),
-  erw [←ring_hom.comp_apply, is_localization.map_comp_map],
-  congr' 1,
-  erw [submonoid.comap_id], 
-  change pt'.as_ideal.prime_compl ≤ 
-    (point_local_ring_hom_pair'.pt (quotient.mk' ⟨pt', M', f'⟩)).as_ideal.prime_compl,
-  erw mk_pt_eq pt' M' f',
-  exact le_refl _,
-end
-
-end point_local_ring_hom_pair'
-
-def point_local_ring_hom_pair_equiv_point_local_ring_hom_pair' 
-  (M : Type u) [comm_ring M] [algebra A M] :
-  point_local_ring_hom_pair A R ≃
-  point_local_ring_hom_pair' A R :=
-{ to_fun := λ P, quotient.mk' 
-  { pt := P.pt,
-    localized_ring := localization.at_prime P.pt.as_ideal,
-    comm_ring_localized_ring := infer_instance,
-    algebra_localized_ring := infer_instance,
-    is_localization := infer_instance,
-    ring_hom_ := P.ring_hom_,
-    is_local_ring_hom_ := infer_instance },
-  inv_fun := λ P,
-  { pt := P.pt,
-    ring_hom_ := P.ring_hom_.comp _,
-    is_local_ring_hom_ := @@is_local_ring_hom_comp _ _ _ _ _ infer_instance $
-      by exactI is_local_ring_hom_equiv 
-        ((is_localization.alg_equiv P.pt.as_ideal.prime_compl 
-          (localization.at_prime P.pt.as_ideal) 
-            P.localized_ring).to_ring_equiv) },
-  left_inv := λ P, 
-  begin
-    ext : 1,
-    swap,
-    { dsimp, rw point_local_ring_hom_pair'.mk_pt_eq, },
-    { dsimp, ext x : 1,
-      induction x using localization.induction_on with data,
-      rcases data with ⟨a, b⟩,
-      simp only [ring_hom.comp_apply, localization.mk_eq_mk',
-        localization.local_ring_hom_mk', ring_equiv.to_ring_hom_eq_coe],
-      dsimp [is_localization.alg_equiv_mk', ideal.comap_id],
-      rw [is_localization.map_mk'], 
-      have := point_local_ring_hom_pair'.mk_ring_hom_' 
-        (point_local_ring_hom_pair'_aux.mk P.pt (localization.at_prime P.pt.as_ideal) P.ring_hom_),
-      dsimp at this,
-      simp_rw ←this,
-      congr' 1,
-      rw [is_localization.map_mk'],
-      refl, },
-  end,
-  right_inv := λ P,
-  begin 
-    dsimp,
-    induction P using quotient.induction_on',
-    haveI : is_localization P.pt.as_ideal.prime_compl (point_local_ring_hom_pair'.localized_ring (quotient.mk' P)),
-    { refine @@is_localization.is_localization_of_alg_equiv _ _ _ _ _ _ 
-        P.is_localization _,
-      refine point_local_ring_hom_pair'_aux.localized_ring_alg_equiv_of_pt_eq 
-        _,
-      exact (point_local_ring_hom_pair'.mk_pt_eq' P).symm, },
-    
-    haveI : is_localization P.pt.as_ideal.prime_compl
-        (localization.at_prime (point_local_ring_hom_pair'.pt (quotient.mk' P)).as_ideal),
-    { have := point_local_ring_hom_pair'.mk_pt_eq' P,
-      erw this,
-      exact localization.is_localization },
-    rw quotient.eq',
-    refine nonempty.intro ⟨_, _⟩,
-    { dsimp, rw point_local_ring_hom_pair'.mk_pt_eq', },
-    { simp_rw [point_local_ring_hom_pair'.mk_pt_eq'],
-      have eq0 : localization.at_prime (point_local_ring_hom_pair'.pt (quotient.mk' P)).as_ideal = 
-        localization.at_prime P.pt.as_ideal,
-      { rw point_local_ring_hom_pair'.mk_pt_eq' },
-      
-      simp_rw point_local_ring_hom_pair'.mk_ring_hom_₂' P,
-      rw [ring_hom.comp_assoc, ring_hom.comp_assoc],
-      convert ring_hom.comp_id _,
-      dsimp,
-      ext : 1,
-      rw [ring_hom.id_apply, ring_hom.comp_apply, ring_hom.comp_apply],
-      erw point_local_ring_hom_pair'_aux.localized_ring_alg_equiv_of_pt_eq_symm_apply,
-      dsimp,
-      rw [←ring_hom.comp_apply, is_localization.map_comp_map, 
-        ←ring_hom.comp_apply], 
-      erw [is_localization.map_comp_map],
-      simp only [ring_hom_comp_triple.comp_eq],
-      erw is_localization.map_id,
-      erw submonoid.comap_id,
-      exact le_refl _,
-       },
-  end }
-
-end local_ring
-
 namespace ring_hom
 
 variables (R : Type u) [comm_ring R] [local_ring R]
 
-section target
+section target_local_ring
 
 variables {R} {A : Type u} [comm_ring A] (φ : A →+* R)
 
-@[simps] def factor_through_target_local_ring : 
+variables (M : Type u) [comm_ring M] [algebra A M] 
+variable [is_localization.at_prime M ((local_ring.maximal_ideal R).comap φ)] 
+
+@[reducible] 
+def fac' : M →+* R :=
+@is_localization.lift A _ ((local_ring.maximal_ideal R).comap φ).prime_compl 
+  _ _ _ _ _ _ φ 
+begin 
+  intros y,
+  have h' := y.2,
+  contrapose! h',
+  rw [←mem_nonunits_iff, ←local_ring.mem_maximal_ideal, ←ideal.mem_comap] at h',
+  exact λ r, r h',
+end
+
+lemma fac'_comp_algebra_map : (φ.fac' M).comp (algebra_map _ _) = φ :=
+is_localization.lift_comp _
+
+lemma fac'_uniq : sorry := sorry
+
+instance is_local_fac' : is_local_ring_hom $ φ.fac' M :=
+{ map_nonunit := λ x hx, 
+  begin 
+    obtain ⟨a, b, rfl⟩ := is_localization.mk'_surjective 
+      ((local_ring.maximal_ideal _).comap φ).prime_compl x,
+    rw is_localization.at_prime.is_unit_mk'_iff,
+    rintros rid,
+    rw [set_like.mem_coe, ideal.mem_comap, local_ring.mem_maximal_ideal,
+      mem_nonunits_iff] at rid,
+    refine rid _, clear rid,
+    rw is_localization.lift_mk' at hx,
+    refine (units.is_unit_mul_units _ _).mp hx,
+  end }
+
+@[simps] def fac : 
   localization.at_prime (ideal.comap φ (local_ring.maximal_ideal _)) →+* R :=
 { to_fun := λ x, x.lift_on (λ a b, φ a * (begin 
     have := (local_ring.mem_maximal_ideal (φ b)).not.mp _,
@@ -686,8 +266,8 @@ variables {R} {A : Type u} [comm_ring A] (φ : A →+* R)
       mul_comm (φ a), mul_comm (φ a'), add_comm],
   end }
 
-instance is_local.factor_through_target_local_ring :
-  is_local_ring_hom (factor_through_target_local_ring φ) :=
+instance is_local.fac :
+  is_local_ring_hom φ.fac :=
 { map_nonunit := localization.ind 
   begin 
     rintros ⟨a, b⟩ h,
@@ -708,28 +288,27 @@ instance is_local.factor_through_target_local_ring :
       refl, },
   end }
 
-@[simp] lemma target_local_ring_eq_comp_factors :
-  (factor_through_target_local_ring φ).comp
-    (algebra_map A (localization.at_prime (ideal.comap φ (local_ring.maximal_ideal _)))) = φ :=
+@[simp] lemma fac_comp_algebra_map :
+  φ.fac.comp (algebra_map A _) = φ :=
 begin 
   ext a,
   rw [ring_hom.comp_apply],
-  change φ.factor_through_target_local_ring (localization.mk a 1) = _,
-  rw [factor_through_target_local_ring_apply, localization.lift_on_mk],
+  change φ.fac (localization.mk a 1) = _,
+  rw [fac_apply, localization.lift_on_mk],
   rw [units.inv_eq_coe_inv, mul_comm, units.inv_mul_eq_iff_eq_mul],
   change φ a = φ 1 * _,
   rw [map_one, one_mul]
 end
 
 -- 01J6, first sentence in proof
-lemma factor_through_target_local_ring_uniq (p : ideal A) [p.is_prime]
+lemma fac_uniq (p : ideal A) [p.is_prime]
   (f : localization.at_prime p →+* R) 
   (hf1 : f.comp (algebra_map A (localization.at_prime p)) = φ)
   (hf2 : is_local_ring_hom f) :
   ∃ (eq1 : p = ideal.comap φ (local_ring.maximal_ideal _)),
     (f.comp $ localization.local_ring_hom _ _ (ring_hom.id A) $
       by rw [ideal.comap_id, eq1] : localization.at_prime (ideal.comap φ (local_ring.maximal_ideal _)) →+* R) = 
-    φ.factor_through_target_local_ring := 
+    φ.fac := 
 begin 
   let 𝔪 := ideal.comap φ (local_ring.maximal_ideal _),
   have ineq1 : p ≤ 𝔪,
@@ -777,7 +356,7 @@ begin
   ext x : 1,
   induction x using localization.induction_on with data,
   rcases data with ⟨a, b⟩,
-  rw [factor_through_target_local_ring_apply, localization.lift_on_mk,
+  rw [fac_apply, localization.lift_on_mk,
     ring_hom.comp_apply, localization.local_ring_hom, localization.mk_eq_mk',
     is_localization.map_mk', ←localization.mk_eq_mk'],
   dsimp,
@@ -800,169 +379,186 @@ begin
   rw map_one,
 end
 
-variables (A R)
-
-def target_local_ring_equiv' :
-  (A →+* R) ≃ local_ring.point_local_ring_hom_pair' A R :=
-{ to_fun := λ φ, quotient.mk'
-  { pt := ⟨(local_ring.maximal_ideal _).comap φ, infer_instance⟩,
-    localized_ring := localization.at_prime $ 
-      (local_ring.maximal_ideal _).comap φ,
-    comm_ring_localized_ring := infer_instance,
-    algebra_localized_ring := infer_instance,
-    is_localization := localization.is_localization,
-    ring_hom_ := φ.factor_through_target_local_ring,
-    is_local_ring_hom_ := infer_instance },
-  inv_fun := λ P, P.ring_hom_.comp $ algebra_map A _,
-  left_inv := λ φ, 
-  begin 
-    dsimp,
-    rw local_ring.point_local_ring_hom_pair'.mk_ring_hom_₂,
-    rw [ring_hom.comp_assoc],
-    conv_rhs { rw ←φ.target_local_ring_eq_comp_factors },
-    congr' 1,
-    ext : 1,
-    rw is_localization.map_comp,
-    refl,
-  end,
-  right_inv := λ P,
-  begin 
-    dsimp,
-    induction P using quotient.induction_on',
-    rw quotient.eq',
-    have pt_eq : (⟨ideal.comap
-      ((local_ring.point_local_ring_hom_pair'.ring_hom_ (quotient.mk' P)).comp
-          (algebra_map A (local_ring.point_local_ring_hom_pair'.localized_ring (quotient.mk' P))))
-        (local_ring.maximal_ideal R), infer_instance⟩ : prime_spectrum _) =
-      P.pt,
-    { dsimp, 
-      rw [local_ring.point_local_ring_hom_pair'.mk_ring_hom_₂',
-        ring_hom.comp_assoc, is_localization.map_comp, ring_hom.comp_id],
-      ext z : 2,
-      rw [subtype.coe_mk, ideal.mem_comap, local_ring.mem_maximal_ideal, 
-        mem_nonunits_iff],
-      split,
-      { contrapose!, rintros rid,
-        exact is_localization.is_unit_comp P.pt.as_ideal.prime_compl P.ring_hom_ 
-          ⟨z, rid⟩, },
-      { contrapose!, rintros rid,
-        rw [ring_hom.comp_apply] at rid,
-        have rid' := P.is_local_ring_hom_.map_nonunit _ rid,
-        resetI,
-        let x : P.localized_ring := ↑rid'.unit⁻¹,
-        obtain ⟨a, b, h⟩ := is_localization.mk'_surjective P.pt.as_ideal.prime_compl x,
-        have eq0 : algebra_map A P.localized_ring z 
-          = is_localization.mk' P.localized_ring z 1,
-        { rw is_localization.mk'_one, },
-        have eq1 : is_localization.mk' P.localized_ring z (1 : P.pt.as_ideal.prime_compl) * 
-            is_localization.mk' P.localized_ring a b 
-          = is_localization.mk' P.localized_ring 1 (1 : P.pt.as_ideal.prime_compl),
-        { rw [is_localization.mk'_one, h, is_unit.mul_coe_inv,
-            is_localization.mk'_one, map_one], },
-        work_on_goal 2 { exact P.pt.as_ideal.prime_compl },
-        work_on_goal 2 { apply_instance },
-        rw [←is_localization.mk'_mul, one_mul, 
-          is_localization.eq,
-          submonoid.coe_one, one_mul, 
-          mul_one] at eq1,
-        obtain ⟨c, hc⟩ := eq1,
-        have mem1 : (b * c : A) ∉ P.pt.as_ideal,
-        { exact submonoid.mul_mem _ b.2 c.2, },
-        rw ←hc at mem1,
-        rintros (rid2 : z ∈ P.pt.as_ideal),
-        refine mem1 (P.pt.as_ideal.mul_mem_right _ 
-          (P.pt.as_ideal.mul_mem_right _ rid2)), }, },
-    refine nonempty.intro ⟨pt_eq, _⟩,
-    { dsimp,
-      ext1 z,
-      obtain ⟨a, b, rfl⟩ := is_localization.mk'_surjective P.pt.as_ideal.prime_compl z,
-      simp only [ring_hom.comp_apply],
-      erw is_localization.map_mk',
-      dsimp only,
-      rw factor_through_target_local_ring_apply,
-      dsimp,
-      erw localization.lift_on_mk',
-      simp_rw [local_ring.point_local_ring_hom_pair'.mk_ring_hom_₂'],
-      rw [ring_hom.comp_apply, ←ring_hom.comp_apply _ (algebra_map A _),
-        is_localization.map_comp, ring_hom.comp_id, 
-        units.mul_inv_eq_iff_eq_mul],
-      erw [←map_mul],
-      congr' 1,
-      rw [←ring_hom.comp_apply, is_localization.map_comp, ring_hom.comp_id,
-        subtype.coe_mk],
-      rw [←is_localization.mk'_one P.localized_ring,  
-        ←is_localization.mk'_one P.localized_ring, 
-        ←is_localization.mk'_mul P.localized_ring, mul_one,
-        is_localization.eq],
-      refine ⟨1, _⟩,
-      simp only [submonoid.coe_one, mul_one], },
-  end }
-
-@[simps] def target_local_ring_equiv :
-  (A →+* R) ≃ local_ring.point_local_ring_hom_pair A R :=
-{ to_fun := λ φ, 
-  { pt := ⟨(local_ring.maximal_ideal _).comap φ, infer_instance⟩,
-    ring_hom_ := φ.factor_through_target_local_ring,
-    is_local_ring_hom_ := infer_instance },
-  inv_fun := λ P, P.ring_hom_.comp $ algebra_map A _,
-  left_inv := target_local_ring_eq_comp_factors,
-  right_inv := λ P,
-  begin 
-    obtain ⟨x, f⟩ := P,
-    resetI,
-    ext : 1,
-    work_on_goal 2
-    { ext z : 2,
-      dsimp only,
-      rw [subtype.coe_mk, ideal.mem_comap, local_ring.mem_maximal_ideal, mem_nonunits_iff],
-      split,
-      { contrapose!, rintros rid,
-        rwa [ring_hom.comp_apply, show algebra_map A (localization.at_prime x.as_ideal) z = localization.mk z 1, from rfl,
-          is_unit_map_iff, localization.at_prime.mk_is_unit_iff] },
-      { contrapose!, rintros rid,
-        rwa [ring_hom.comp_apply, show algebra_map A (localization.at_prime x.as_ideal) z = localization.mk z 1, from rfl,
-          is_unit_map_iff, localization.at_prime.mk_is_unit_iff] at rid } },
-    { ext z : 1,
-      induction z using localization.induction_on with data,
-      rcases data with ⟨a, b⟩,
-      dsimp only at *,
-      rw [ring_hom.comp_apply], 
-      simp_rw [localization.mk_eq_mk', localization.local_ring_hom_mk', ←localization.mk_eq_mk',
-        ring_hom.factor_through_target_local_ring_apply, localization.lift_on_mk, ring_hom.id_apply,
-        ring_hom.comp_apply, show algebra_map A (localization.at_prime x.as_ideal) a = localization.mk a 1, from rfl],
-      rw [units.inv_eq_coe_inv],
-      symmetry,
-      rw [units.eq_mul_inv_iff_mul_eq],
-      change _ * f (localization.mk b 1) = _,
-      rw [←map_mul, localization.mk_mul, mul_one],
-      congr' 1,
-      rw [localization.mk_eq_mk_iff, localization.r_iff_exists],
-      exact ⟨1, by simp only [subtype.coe_mk, submonoid.coe_one, mul_one]⟩, }
-  end }
-
-end target
+end target_local_ring
 
 end ring_hom
 
 namespace local_ring
 
-variables (R S : Type u) [comm_ring R] [comm_ring S] [local_ring S] (f : R ≃+* S)
+variables (A R : Type u) [comm_ring A] [comm_ring R] [local_ring R] 
 
-def of_equiv : local_ring R :=
-@@local_ring.of_is_unit_or_is_unit_of_is_unit_add _
-  (⟨⟨f.symm nontrivial.exists_pair_ne.some, 
-    f.symm nontrivial.exists_pair_ne.some_spec.some, 
-    λ r, nontrivial.exists_pair_ne.some_spec.some_spec $ f.symm.injective r⟩⟩ : nontrivial R) $ λ a b h,
+@[ext] structure point_local_ring_hom_pair' :=
+(pt : prime_spectrum A)
+(localized_ring : Type u)
+[comm_ring_localized_ring : comm_ring localized_ring]
+[algebra_localized_ring : algebra A localized_ring]
+[is_localization : is_localization.at_prime localized_ring pt.as_ideal]
+(ring_hom_ : localized_ring →+* R)
+[is_local_ring_hom_ : is_local_ring_hom ring_hom_]
+
+attribute [instance] point_local_ring_hom_pair'.comm_ring_localized_ring
+attribute [instance] point_local_ring_hom_pair'.algebra_localized_ring
+attribute [instance] point_local_ring_hom_pair'.is_localization
+attribute [instance] point_local_ring_hom_pair'.is_local_ring_hom_
+
+namespace point_local_ring_hom_pair'
+
+variables (P Q : point_local_ring_hom_pair' A R)
+
+section
+
+variables {A R P Q}
+
+@[simps]
+def localized_ring_equiv_of_pt_eq (pt_eq : P.pt = Q.pt) :
+  P.localized_ring ≃+* Q.localized_ring :=
+{ to_fun := is_localization.map _ (ring_hom.id A) $
+      show P.pt.as_ideal.prime_compl ≤ 
+        submonoid.comap (ring_hom.id A) Q.pt.as_ideal.prime_compl, 
+      by erw [submonoid.comap_id, pt_eq]; exact le_refl _,
+  inv_fun := is_localization.map _ (ring_hom.id A) $
+      show Q.pt.as_ideal.prime_compl ≤ 
+        submonoid.comap (ring_hom.id A) P.pt.as_ideal.prime_compl, 
+      by erw [submonoid.comap_id, pt_eq]; exact le_refl _,
+  left_inv := λ x, 
+  begin
+    obtain ⟨a, b, eq0⟩ := is_localization.mk'_surjective P.pt.as_ideal.prime_compl x,
+    rw [←eq0, is_localization.map_mk', is_localization.map_mk', 
+      ring_hom.id_apply, ring_hom.id_apply],
+    congr,
+    ext,
+    refl,
+  end,
+  right_inv := λ x,
+  begin
+    obtain ⟨a, b, eq0⟩ := is_localization.mk'_surjective Q.pt.as_ideal.prime_compl x,
+    rw [←eq0, is_localization.map_mk', is_localization.map_mk', 
+      ring_hom.id_apply, ring_hom.id_apply],
+    congr,
+    ext,
+    refl,
+  end,
+  map_mul' := map_mul _,
+  map_add' := map_add _ }
+
+end
+
+section
+
+variables {A R}
+
+structure equiv :=
+(pt_eq : P.pt = Q.pt)
+(ring_hom_eq : P.ring_hom_ 
+    = Q.ring_hom_.comp (localized_ring_equiv_of_pt_eq pt_eq).to_ring_hom) 
+
+end
+
+end point_local_ring_hom_pair'
+
+variables {A R}
+
+@[simps]
+def to_point_local_ring_hom_pair' (f : A →+* R) : 
+  point_local_ring_hom_pair' A R :=
+{ pt := ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩,
+  localized_ring := localization.at_prime $ 
+    (local_ring.maximal_ideal R).comap f,
+  comm_ring_localized_ring := infer_instance,
+  algebra_localized_ring := localization.algebra,
+  is_localization := localization.is_localization ,
+  ring_hom_ := f.fac,
+  is_local_ring_hom_ := infer_instance }
+
+@[simps] 
+def from_point_local_ring_hom_pair (P : point_local_ring_hom_pair' A R) :
+  A →+* R :=
+P.ring_hom_.comp $ algebra_map _ _
+
+def from_point_local_ring_hom_pair.resp_equiv 
+  {P Q : point_local_ring_hom_pair' A R} (r : P.equiv Q) :
+  from_point_local_ring_hom_pair P = from_point_local_ring_hom_pair Q :=
 begin 
-  have h' : is_unit (f (a + b)) := f.to_ring_hom.is_unit_map h,
-  rw [map_add] at h',
-  obtain h''|h'' := local_ring.is_unit_or_is_unit_of_is_unit_add h',
-  left,
-  convert f.symm.to_ring_hom.is_unit_map h'',
-  erw [equiv.symm_apply_apply],
-  right,
-  convert f.symm.to_ring_hom.is_unit_map h'',
-  erw [equiv.symm_apply_apply],
+  ext a,
+  rw [from_point_local_ring_hom_pair_apply, from_point_local_ring_hom_pair,
+    r.ring_hom_eq, ring_hom.comp_apply], 
+  erw [point_local_ring_hom_pair'.localized_ring_equiv_of_pt_eq_apply],
+  rw [←ring_hom.comp_apply, ←ring_hom.comp_apply, ring_hom.comp_assoc,
+    is_localization.map_comp, ring_hom.comp_id],
+end
+
+def from_point_local_ring_hom_pair.surjective (f : A →+* R) :
+  ∃ (P : point_local_ring_hom_pair' A R), from_point_local_ring_hom_pair P = f :=
+⟨{ pt := ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩,
+    localized_ring := localization.at_prime $ 
+      (local_ring.maximal_ideal R).comap f,
+    comm_ring_localized_ring := infer_instance,
+    algebra_localized_ring := infer_instance,
+    is_localization := infer_instance,
+    ring_hom_ := f.fac,
+    is_local_ring_hom_ := infer_instance }, 
+begin 
+  dsimp [from_point_local_ring_hom_pair],
+  rw f.fac_comp_algebra_map,  
+end⟩
+
+def from_point_local_ring_hom.almost_injective {P Q : point_local_ring_hom_pair' A R}
+  (h : from_point_local_ring_hom_pair P = from_point_local_ring_hom_pair Q) :
+  P.equiv Q :=
+begin 
+  have pt_eq := P.pt = Q.pt,
+  { dsimp [from_point_local_ring_hom_pair] at h, },
+end
+
+def to_point_local_ring_hom_pair.almost_surjective (f : A →+* R) : 
+  Σ (P : point_local_ring_hom_pair' A R), 
+    P.equiv (to_point_local_ring_hom_pair' f) :=
+  /-
+  This is saying if `f : A →+* R`, then there exists a triple 
+  `P := (𝔭, M ⟶ R, M ≅ A_𝔭)` such that `to_point_local_ring_hom_pair' f` is
+  equivalent to `P`.
+  -/  
+{ fst := 
+  { pt := ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩,
+    localized_ring := localization.at_prime $ 
+      (local_ring.maximal_ideal R).comap f,
+    comm_ring_localized_ring := infer_instance,
+    algebra_localized_ring := infer_instance,
+    is_localization := infer_instance,
+    ring_hom_ := f.fac,
+    is_local_ring_hom_ := infer_instance },
+  snd := 
+  { pt_eq := rfl,
+    ring_hom_eq := 
+    begin 
+      dsimp only [to_point_local_ring_hom_pair'_ring_hom_],
+      symmetry, convert ring_hom.comp_id _,
+      ext x : 1,
+      induction x using localization.induction_on with data,
+      rcases data with ⟨a, b, hab⟩,
+      erw point_local_ring_hom_pair'.localized_ring_equiv_of_pt_eq_apply,
+      rw [ring_hom.id_apply, localization.mk_eq_mk', is_localization.map_mk'],
+      congr,
+    end } }
+
+def to_point_local_ring_hom_pair.almost_injective {f g : A →+* R}
+  (hfg : (to_point_local_ring_hom_pair' f).equiv (to_point_local_ring_hom_pair' g)) :
+  f = g :=
+begin 
+  have := hfg.ring_hom_eq,
+  dsimp at this,
+  replace this := congr_arg (λ h, ring_hom.comp h (algebra_map A (localization.at_prime (ideal.comap f (maximal_ideal R))))) this,
+  dsimp at this,
+  rw f.fac_comp_algebra_map at this,
+  rw [this, ring_hom.comp_assoc],
+  convert ←g.fac_comp_algebra_map,
+  ext : 1,
+  erw [ring_hom.comp_apply, 
+    point_local_ring_hom_pair'.localized_ring_equiv_of_pt_eq_apply,
+    ring_hom.coe_mk, algebra.algebra_map_self, ←ring_hom.comp_apply, 
+    is_localization.map_comp, ring_hom.comp_id],
+  dsimp,
+  refl,
 end
 
 end local_ring
