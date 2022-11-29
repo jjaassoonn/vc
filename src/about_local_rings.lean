@@ -286,7 +286,7 @@ namespace local_ring
 
 variables (A R : Type u) [comm_ring A] [comm_ring R] [local_ring R] 
 
-@[ext] structure point_local_ring_hom_pair' :=
+@[ext] structure point_local_ring_hom_pair :=
 (pt : prime_spectrum A)
 (localized_ring : Type u)
 [comm_ring_localized_ring : comm_ring localized_ring]
@@ -295,14 +295,14 @@ variables (A R : Type u) [comm_ring A] [comm_ring R] [local_ring R]
 (ring_hom_ : localized_ring →+* R)
 [is_local_ring_hom_ : is_local_ring_hom ring_hom_]
 
-attribute [instance] point_local_ring_hom_pair'.comm_ring_localized_ring
-attribute [instance] point_local_ring_hom_pair'.algebra_localized_ring
-attribute [instance] point_local_ring_hom_pair'.is_localization
-attribute [instance] point_local_ring_hom_pair'.is_local_ring_hom_
+attribute [instance] point_local_ring_hom_pair.comm_ring_localized_ring
+attribute [instance] point_local_ring_hom_pair.algebra_localized_ring
+attribute [instance] point_local_ring_hom_pair.is_localization
+attribute [instance] point_local_ring_hom_pair.is_local_ring_hom_
 
-namespace point_local_ring_hom_pair'
+namespace point_local_ring_hom_pair
 
-variables (P Q : point_local_ring_hom_pair' A R)
+variables (P Q : point_local_ring_hom_pair A R)
 
 section
 
@@ -380,13 +380,13 @@ structure equiv : Prop :=
 
 end
 
-end point_local_ring_hom_pair'
+end point_local_ring_hom_pair
 
 variables {A R}
 
 @[simps]
-def to_point_local_ring_hom_pair' (f : A →+* R) : 
-  point_local_ring_hom_pair' A R :=
+def to_point_local_ring_hom_pair (f : A →+* R) : 
+  point_local_ring_hom_pair A R :=
 { pt := ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩,
   localized_ring := localization.at_prime $ 
     (local_ring.maximal_ideal R).comap f,
@@ -397,24 +397,24 @@ def to_point_local_ring_hom_pair' (f : A →+* R) :
   is_local_ring_hom_ := infer_instance }
 
 @[simps] 
-def from_point_local_ring_hom_pair (P : point_local_ring_hom_pair' A R) :
+def from_point_local_ring_hom_pair (P : point_local_ring_hom_pair A R) :
   A →+* R :=
 P.ring_hom_.comp $ algebra_map _ _
 
 lemma from_point_local_ring_hom_pair.resp_equiv 
-  {P Q : point_local_ring_hom_pair' A R} (r : P.equiv Q) :
+  {P Q : point_local_ring_hom_pair A R} (r : P.equiv Q) :
   from_point_local_ring_hom_pair P = from_point_local_ring_hom_pair Q :=
 begin 
   ext a,
   rw [from_point_local_ring_hom_pair_apply, from_point_local_ring_hom_pair,
     r.ring_hom_eq, ring_hom.comp_apply], 
-  erw [point_local_ring_hom_pair'.localized_ring_equiv_of_pt_eq_apply],
+  erw [point_local_ring_hom_pair.localized_ring_equiv_of_pt_eq_apply],
   rw [←ring_hom.comp_apply, ←ring_hom.comp_apply, ring_hom.comp_assoc,
     is_localization.map_comp, ring_hom.comp_id],
 end
 
 lemma from_point_local_ring_hom_pair.surjective (f : A →+* R) :
-  ∃ (P : point_local_ring_hom_pair' A R), from_point_local_ring_hom_pair P = f :=
+  ∃ (P : point_local_ring_hom_pair A R), from_point_local_ring_hom_pair P = f :=
 ⟨{ pt := ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩,
     localized_ring := localization.at_prime $ 
       (local_ring.maximal_ideal R).comap f,
@@ -428,7 +428,7 @@ begin
   rw f.fac_comp_algebra_map,  
 end⟩
 
-lemma from_point_local_ring_hom.almost_injective {P Q : point_local_ring_hom_pair' A R}
+lemma from_point_local_ring_hom.almost_injective {P Q : point_local_ring_hom_pair A R}
   (h : from_point_local_ring_hom_pair P = from_point_local_ring_hom_pair Q) :
   P.equiv Q :=
 begin 
@@ -490,11 +490,11 @@ begin
 end
 
 lemma to_point_local_ring_hom_pair.almost_surjective (f : A →+* R) : 
-  ∃ (P : point_local_ring_hom_pair' A R), 
-    P.equiv (to_point_local_ring_hom_pair' f) :=
+  ∃ (P : point_local_ring_hom_pair A R), 
+    P.equiv (to_point_local_ring_hom_pair f) :=
   /-
   This is saying if `f : A →+* R`, then there exists a triple 
-  `P := (𝔭, M ⟶ R, M ≅ A_𝔭)` such that `to_point_local_ring_hom_pair' f` is
+  `P := (𝔭, M ⟶ R, M ≅ A_𝔭)` such that `to_point_local_ring_hom_pair f` is
   equivalent to `P`.
   -/  
 ⟨{ pt := ⟨(local_ring.maximal_ideal R).comap f, infer_instance⟩,
@@ -508,18 +508,18 @@ lemma to_point_local_ring_hom_pair.almost_surjective (f : A →+* R) :
   { pt_eq := rfl,
     ring_hom_eq := 
     begin 
-      dsimp only [to_point_local_ring_hom_pair'_ring_hom_],
+      dsimp only [to_point_local_ring_hom_pair_ring_hom_],
       symmetry, convert ring_hom.comp_id _,
       ext x : 1,
       induction x using localization.induction_on with data,
       rcases data with ⟨a, b, hab⟩,
-      erw point_local_ring_hom_pair'.localized_ring_equiv_of_pt_eq_apply,
+      erw point_local_ring_hom_pair.localized_ring_equiv_of_pt_eq_apply,
       rw [ring_hom.id_apply, localization.mk_eq_mk', is_localization.map_mk'],
       congr,
     end }⟩
 
 lemma to_point_local_ring_hom_pair.almost_injective {f g : A →+* R}
-  (hfg : (to_point_local_ring_hom_pair' f).equiv (to_point_local_ring_hom_pair' g)) :
+  (hfg : (to_point_local_ring_hom_pair f).equiv (to_point_local_ring_hom_pair g)) :
   f = g :=
 begin 
   have := hfg.ring_hom_eq,
@@ -531,7 +531,7 @@ begin
   convert ←g.fac_comp_algebra_map,
   ext : 1,
   erw [ring_hom.comp_apply, 
-    point_local_ring_hom_pair'.localized_ring_equiv_of_pt_eq_apply,
+    point_local_ring_hom_pair.localized_ring_equiv_of_pt_eq_apply,
     ring_hom.coe_mk, algebra.algebra_map_self, ←ring_hom.comp_apply, 
     is_localization.map_comp, ring_hom.comp_id],
   dsimp,
