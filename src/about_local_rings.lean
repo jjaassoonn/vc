@@ -302,7 +302,7 @@ attribute [instance] point_local_ring_hom_pair.is_local_ring_hom_
 
 namespace point_local_ring_hom_pair
 
-variables (P Q : point_local_ring_hom_pair A R)
+variables (P Q S : point_local_ring_hom_pair A R)
 
 section
 
@@ -378,6 +378,38 @@ structure equiv : Prop :=
 (ring_hom_eq : P.ring_hom_ 
     = Q.ring_hom_.comp (localized_ring_equiv_of_pt_eq pt_eq).to_ring_hom) 
 
+lemma equiv.refl : P.equiv P :=
+{ pt_eq := rfl,
+  ring_hom_eq :=
+  begin 
+    ext : 1,
+    obtain ⟨a, b, rfl⟩ := is_localization.mk'_surjective 
+      P.pt.as_ideal.prime_compl x,
+    erw [ring_hom.comp_apply, is_localization.map_mk'],
+    refl,
+  end }
+
+lemma equiv.symm (h : P.equiv Q) : Q.equiv P :=
+{ pt_eq := h.pt_eq.symm,
+  ring_hom_eq := 
+  begin 
+    rw [h.ring_hom_eq, ring_hom.comp_assoc],
+    symmetry, convert ring_hom.comp_id _,
+    erw is_localization.map_comp_map,
+    ext : 1,
+    erw [is_localization.map_id, ring_hom.id_apply],
+  end }
+
+lemma equiv.trans (h1 : P.equiv Q) (h2 : Q.equiv S) : P.equiv S :=
+{ pt_eq := h1.pt_eq.trans h2.pt_eq,
+  ring_hom_eq := 
+  begin 
+    rw [h1.ring_hom_eq, h2.ring_hom_eq, ring_hom.comp_assoc],
+    congr' 1,
+    erw [is_localization.map_comp_map],
+    refl,
+  end }
+
 end
 
 end point_local_ring_hom_pair
@@ -428,7 +460,7 @@ begin
   rw f.fac_comp_algebra_map,  
 end⟩
 
-lemma from_point_local_ring_hom.almost_injective {P Q : point_local_ring_hom_pair A R}
+lemma from_point_local_ring_hom_pair.almost_injective {P Q : point_local_ring_hom_pair A R}
   (h : from_point_local_ring_hom_pair P = from_point_local_ring_hom_pair Q) :
   P.equiv Q :=
 begin 
@@ -478,7 +510,6 @@ begin
     units.inv_eq_coe_inv, units.inv_eq_coe_inv],
   erw [fun_like.congr_fun h a, ring_hom.is_local_ring_hom.map_inv, 
     ring_hom.is_local_ring_hom.map_inv],
-  -- erw eq2,
   congr' 1,
   rw [units.inv_eq_coe_inv, units.inv_eq_coe_inv],
   apply units.eq_inv_of_mul_eq_one_left, symmetry,
@@ -537,5 +568,20 @@ begin
   dsimp,
   refl,
 end
+
+lemma from_to_point_local_ring_hom_pair (f : A →+* R) :
+  from_point_local_ring_hom_pair (to_point_local_ring_hom_pair f) = f :=
+begin 
+  ext x : 1,
+  rw [from_point_local_ring_hom_pair_apply, 
+    to_point_local_ring_hom_pair_ring_hom_, ←ring_hom.comp_apply],
+  conv_rhs { rw ←f.fac_comp_algebra_map },
+  congr' 1,
+end
+
+lemma to_from_point_local_ring_hom_pair (P : point_local_ring_hom_pair A R) :
+  (to_point_local_ring_hom_pair (from_point_local_ring_hom_pair P)).equiv P := 
+from_point_local_ring_hom_pair.almost_injective 
+  (from_to_point_local_ring_hom_pair _)
 
 end local_ring
