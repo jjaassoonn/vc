@@ -164,14 +164,20 @@ section affine
 
 variables [is_affine X]
 
-def stalk_iso_Γ (P : point_stalk_ring_hom_pair X R) :
+def stalk_iso_localization (P : point_stalk_ring_hom_pair X R) :
   P.stalk_ ≅ CommRing.of (localization.at_prime (X.iso_Spec.hom.1 P.pt).as_ideal) :=
 P.stalk_iso ≪≫ 
-{ hom := stalk_specializes _ (by erw [←Scheme.comp_val_base_apply, iso.hom_inv_id, Scheme.id_val_base, id_apply]) 
-    ≫ PresheafedSpace.stalk_map X.iso_Spec.inv.1 _,
-  inv := PresheafedSpace.stalk_map X.iso_Spec.hom.1 _,
-  hom_inv_id' := sorry,
-  inv_hom_id' := sorry } ≪≫ (structure_sheaf.stalk_iso _ _)
+(PresheafedSpace.stalk_map.stalk_iso 
+  ({ hom := X.iso_Spec.hom.1, 
+    inv := X.iso_Spec.inv.1, 
+    hom_inv_id' := by erw [←Scheme.comp_val, iso.hom_inv_id]; refl, 
+    inv_hom_id' := by erw [←Scheme.comp_val, iso.inv_hom_id]; refl } : X.to_PresheafedSpace ≅ (Spec_obj $ Γ.obj $ op X).to_PresheafedSpace) P.pt).symm
+≪≫ (structure_sheaf.stalk_iso _ _)
+
+def Γ_to_germ (P : point_stalk_ring_hom_pair X R) :
+  (Γ.obj $ op X) ⟶ P.stalk_ :=
+(structure_sheaf.global_sections_iso (Γ.obj $ op X)).hom ≫ 
+  X.iso_Spec.hom.1.c.app (op ⊤) ≫ P.stalk_cocone.ι.app (op ⊤)
 
 end affine
 
@@ -184,8 +190,25 @@ variables [is_affine X]
 def from_point_stalk_ring_hom_pair_of_affine (P : point_stalk_ring_hom_pair X R) :
   Spec_obj R ⟶ X :=
 (hom.target_AffineScheme (Spec_obj R) X).symm $ 
-  (_ ≫ P.ring_hom_ : (Γ.obj $ op X) ⟶ R) ≫ 
-  (structure_sheaf.global_sections_iso _).hom
+  local_ring.from_point_local_ring_hom_pair 
+  { pt := X.iso_Spec.hom.1.base P.pt,
+    localized_ring := X.presheaf.stalk P.pt,
+    comm_ring_localized_ring := infer_instance,
+    algebra_localized_ring := infer_instance,
+    is_localization := infer_instance,
+    ring_hom_ := P.stalk_iso.inv ≫ P.ring_hom_ 
+      ≫ (structure_sheaf.global_sections_iso R).hom,
+    is_local_ring_hom_ := infer_instance }
+
+def to_point_stalk_ring_hom_pair_of_affine (α : Spec_obj R ⟶ X) :
+  point_stalk_ring_hom_pair X R :=
+let P := local_ring.to_point_local_ring_hom_pair 
+  ((hom.target_AffineScheme (Spec_obj R) X) α) in
+{ pt := X.iso_Spec.inv.1.base P.pt,
+  stalk_ := CommRing.of P.localized_ring,
+  stalk_iso := _,
+  ring_hom_ := _,
+  is_local_ring_hom_ := _ }
 
 end affine
 
