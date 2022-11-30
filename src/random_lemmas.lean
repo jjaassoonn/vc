@@ -1,6 +1,9 @@
 import algebra.category.Ring
+import algebraic_geometry.stalks
+import algebraic_geometry.Scheme
 
-open category_theory
+open category_theory category_theory.limits
+open Top.presheaf Top.sheaf topological_space
 
 namespace CommRing
 
@@ -45,4 +48,105 @@ ring_hom.to_algebra $ (algebra_map _ _).comp i.symm.to_ring_hom
 @[simps] def of_equiv (i : X ≃+* X') [algebra R X] : algebra R X' :=
 ring_hom.to_algebra $ i.to_ring_hom.comp (algebra_map R X)
 
+lemma algebra_map_self : 
+  algebra_map R R = ring_hom.id R := by { ext : 1, refl }
+
 end algebra
+
+namespace Top.presheaf
+
+universes u v
+
+variables {C : Type u} [category.{v} C] [has_colimits C] {X : Top.{v}}
+
+lemma stalk_specializes_eq_to_hom (F : Top.presheaf C X) {x y : X} (h : x = y) :
+  stalk_specializes F (by rw h : x ⤳ y) = eq_to_hom (by rw h) :=
+begin 
+  subst h,
+  rw [eq_to_hom_refl],
+  apply stalk_hom_ext,
+  intros U h,
+  erw [germ_stalk_specializes, category.comp_id],
+  refl,
+end
+
+end Top.presheaf
+
+namespace algebraic_geometry
+
+namespace PresheafedSpace
+
+universes u v w
+
+variables {C : Type u} [category.{v} C] [has_colimits C] (X Y : PresheafedSpace.{v v u} C)
+variables (i : X ≅ Y) (x : X.carrier)
+
+@[simps] noncomputable def stalk_iso : X.stalk x ≅ Y.stalk (i.hom.base x) :=
+{ hom := stalk_specializes _ (by erw [←comp_apply i.hom.base, ←comp_base, 
+    iso.hom_inv_id, id_base, id_apply]) 
+    ≫ PresheafedSpace.stalk_map i.inv (i.hom.base x),
+  inv := PresheafedSpace.stalk_map i.hom _,
+  hom_inv_id' := 
+  begin 
+    rw Top.presheaf.stalk_specializes_eq_to_hom,
+    work_on_goal 2 
+    { erw [←comp_apply i.hom.base, ←comp_base, iso.hom_inv_id, id_base, id_apply], },
+    refine stalk_hom_ext _ _,
+    intros U h,
+    rw [category.assoc, ←stalk_map.comp i.hom i.inv],
+    rw PresheafedSpace.stalk_map.congr_hom,
+    work_on_goal 2 { exact iso.hom_inv_id _, },
+    rw [eq_to_hom_trans_assoc, eq_to_hom_refl, stalk_map.id],
+    erw category.comp_id,
+  end,
+  inv_hom_id' := 
+  begin 
+    rw Top.presheaf.stalk_specializes_eq_to_hom,
+    work_on_goal 2 
+    { erw [←comp_apply i.hom.base, ←comp_base, iso.hom_inv_id, id_base, id_apply], },
+    rw [←category.assoc, PresheafedSpace.stalk_map.congr_point],
+    work_on_goal 2 
+    { erw [←comp_apply i.hom.base, ←comp_base, iso.hom_inv_id, id_base, id_apply], },
+    rw [category.assoc], 
+    erw [←stalk_map.comp i.inv i.hom],
+    rw stalk_map.congr_hom,
+    work_on_goal 2 { exact iso.inv_hom_id _, },
+    rw [eq_to_hom_trans_assoc, eq_to_hom_refl, stalk_map.id],
+    erw category.id_comp _,
+  end }
+
+end PresheafedSpace
+
+namespace LocallyRingedSpace
+
+universe u
+
+variables (X Y : LocallyRingedSpace.{u})
+variables (i : X ≅ Y) (x : X.carrier)
+
+@[simps] noncomputable def stalk_iso : X.stalk x ≅ Y.stalk (i.hom.1.base x) :=
+let i' : X.to_PresheafedSpace ≅ Y.to_PresheafedSpace :=
+{ hom := i.hom.1,
+  inv := i.inv.1,
+  hom_inv_id' := by erw [←comp_val, iso.hom_inv_id, id_val]; refl,
+  inv_hom_id' := by erw [←comp_val, iso.inv_hom_id, id_val]; refl } in 
+PresheafedSpace.stalk_iso _ _ i' x
+
+end LocallyRingedSpace
+
+namespace Scheme
+
+universe u
+
+variables (X Y : Scheme.{u}) (i : X ≅ Y) (x : X.carrier)
+
+noncomputable def stalk_iso : X.stalk x ≅ Y.stalk (i.hom.1.base x) :=
+LocallyRingedSpace.stalk_iso X.to_LocallyRingedSpace Y.to_LocallyRingedSpace 
+{ hom := i.hom,
+  inv := i.inv,
+  hom_inv_id' := i.hom_inv_id',
+  inv_hom_id' := i.inv_hom_id' } x
+
+end Scheme
+
+end algebraic_geometry
