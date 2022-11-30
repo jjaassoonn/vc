@@ -200,15 +200,34 @@ def from_point_stalk_ring_hom_pair_of_affine (P : point_stalk_ring_hom_pair X R)
       ≫ (structure_sheaf.global_sections_iso R).hom,
     is_local_ring_hom_ := infer_instance }
 
+@[simps]
 def to_point_stalk_ring_hom_pair_of_affine (α : Spec_obj R ⟶ X) :
   point_stalk_ring_hom_pair X R :=
 let P := local_ring.to_point_local_ring_hom_pair 
   ((hom.target_AffineScheme (Spec_obj R) X) α) in
 { pt := X.iso_Spec.inv.1.base P.pt,
   stalk_ := CommRing.of P.localized_ring,
-  stalk_iso := _,
-  ring_hom_ := _,
-  is_local_ring_hom_ := _ }
+  stalk_iso :=
+    let α := @is_localization.alg_equiv (Γ.obj $ op X) _ 
+      P.pt.as_ideal.prime_compl P.localized_ring _ _ _
+      (X.stalk (X.iso_Spec.inv.1.base P.pt)) _
+      (X.global_sections_algebra _) (X.stalk_is_localization P.pt) in
+  { hom := α.to_ring_equiv.to_ring_hom,
+    inv := α.to_ring_equiv.symm.to_ring_hom,
+    hom_inv_id' := 
+    begin
+      ext : 1,
+      rw [comp_apply, id_apply, 
+        ring_equiv.symm_to_ring_hom_apply_to_ring_hom_apply],
+    end,
+    inv_hom_id' := 
+    begin 
+      ext : 1,
+      rw [comp_apply, id_apply,
+        ring_equiv.to_ring_hom_apply_symm_to_ring_hom_apply],
+    end },
+  ring_hom_ := P.ring_hom_ ≫ (structure_sheaf.global_sections_iso _).inv,
+  is_local_ring_hom_ := infer_instance }
 
 end affine
 

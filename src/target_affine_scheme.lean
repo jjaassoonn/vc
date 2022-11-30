@@ -34,7 +34,6 @@ local_ring.of_equiv _ R
   map_add' := map_add _ }
 
 -- concrete
-@[simps]
 def stalk_iso_of_affine (pt : prime_spectrum $ Γ.obj $ op Y)  : 
     Y.stalk (Y.iso_Spec.inv.1.base pt)
   ≃+* localization.at_prime pt.as_ideal :=
@@ -97,14 +96,19 @@ ring_equiv.trans
   map_mul' := map_mul _,
   map_add' := map_add _ }
 
-instance gloabl_sections_algebra (y : Y.carrier) :
+instance global_sections_algebra' (y : Y.carrier) :
   algebra (Γ.obj $ op Y) $ Y.presheaf.stalk y :=
 ring_hom.to_algebra $ (Y.stalk_iso_of_affine' y).symm.to_ring_hom.comp $
   @@algebra_map _ _ _ _ (by { dsimp, exactI localization.algebra })
 
-instance stalk_is_localization (y : Y.carrier) : 
+instance global_sections_algebra (pt : prime_spectrum $ Γ.obj $ op Y) :
+  algebra (Γ.obj $ op Y) $ Y.presheaf.stalk (Y.iso_Spec.inv.1.base pt) :=
+ring_hom.to_algebra $ (Y.stalk_iso_of_affine pt).symm.to_ring_hom.comp $
+  algebra_map _ _
+
+instance stalk_is_localization' (y : Y.carrier) : 
   @@is_localization.at_prime _ (Y.presheaf.stalk y)
-    _ (algebraic_geometry.Scheme.gloabl_sections_algebra Y y) 
+    _ (algebraic_geometry.Scheme.global_sections_algebra' Y y) 
     (Y.iso_Spec.hom.1.base y).as_ideal _ :=
 { map_units := λ z, 
   begin 
@@ -134,6 +138,40 @@ instance stalk_is_localization (y : Y.carrier) :
       localization.is_localization.eq_iff_exists],
 
     exact (Y.stalk_iso_of_affine' y).symm.bijective.injective,
+  end }
+
+instance stalk_is_localization (pt : prime_spectrum $ Γ.obj $ op Y) :
+  @@is_localization.at_prime _ (Y.stalk $ Y.iso_Spec.inv.1.base pt)
+    _ (algebraic_geometry.Scheme.global_sections_algebra Y pt) 
+    pt.as_ideal _ :=
+{ map_units := λ y,
+  begin 
+    rw [ring_hom.algebra_map_to_algebra, ring_hom.comp_apply],
+    refine is_unit.map _ _,
+    rw [←localization.mk_algebra_map, localization.at_prime.mk_is_unit_iff,
+      algebra.algebra_map_self, ring_hom.id_apply],
+    exact y.2
+  end,
+  surj := λ z, 
+  begin 
+    simp_rw [ring_hom.algebra_map_to_algebra, ring_hom.comp_apply],
+    set z' : localization.at_prime pt.as_ideal := 
+      (stalk_iso_of_affine Y pt) z with z'_eq,
+    have eq0 : z = (stalk_iso_of_affine Y pt).symm.to_ring_hom z',
+    { erw ring_equiv.symm_apply_apply },
+    simp_rw [eq0, ←map_mul],
+    obtain ⟨⟨a, b⟩, eq1⟩ := localization.is_localization.surj z',
+    refine ⟨⟨a, b⟩, _⟩,
+    dsimp at eq1 ⊢,
+    congr' 1,
+  end,
+  eq_iff_exists := λ z1 z2,
+  begin 
+    rw [ring_hom.algebra_map_to_algebra, ring_hom.comp_apply, 
+      ring_hom.comp_apply, function.injective.eq_iff,
+      localization.is_localization.eq_iff_exists],
+
+    exact (Y.stalk_iso_of_affine pt).symm.bijective.injective,
   end }
 
 end Scheme
