@@ -34,6 +34,12 @@ lemma ring_equiv_eq_iff_to_iso_eq {A B : Type*} [comm_ring A] [comm_ring B]
   mpr := λ h, ring_equiv.ext $ λ x, show (to_iso i).hom x = (to_iso i').hom x, 
     from h ▸ rfl }
 
+lemma CommRing_comp_eq_comp {R S T : Type*} 
+  [comm_ring R] [comm_ring S] [comm_ring T] (f : R →+* S) (g : S →+* T) :
+  g.comp f = (show CommRing.of R ⟶ CommRing.of S, from f) ≫ 
+    (show CommRing.of S ⟶ CommRing.of T, from g) := 
+rfl
+
 end CommRing
 
 namespace algebra
@@ -175,3 +181,28 @@ begin
 end
 
 end local_ring
+
+namespace category_theory.limits
+
+universes u v u' v'
+
+variables {J : Type u} [category.{v} J] 
+variables {C : Type u'} [category.{v'} C] {F : J ⥤ C} 
+variables (a1 a2 : cocone F) [is_colimit a1] [is_colimit a2]
+
+lemma uniq_iso (x y : a1 ≅ a2)
+  (h1 : ∀ (j : J), a1.ι.app j ≫ x.hom.hom = a2.ι.app j)
+  (h2 : ∀ (j : J), a1.ι.app j ≫ y.hom.hom = a2.ι.app j) : x = y :=
+begin 
+  ext,
+  rw is_colimit.uniq _ _ x.hom.hom h1,
+  rw is_colimit.uniq _ _ y.hom.hom h2,
+  exact _inst_3,
+end
+
+example : true :=
+begin 
+  have := @is_colimit,
+end
+
+end category_theory.limits

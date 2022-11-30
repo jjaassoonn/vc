@@ -74,6 +74,10 @@ structure equiv : Prop :=
 (pt_eq : P.pt = Q.pt)
 (ring_hom_eq : P.ring_hom_ = (stalk_equiv_of_pt_eq pt_eq).hom ≫ Q.ring_hom_)
 
+structure equiv' : Prop :=
+(pt_eq : P.pt = Q.pt)
+(ring_hom_eq : (stalk_equiv_of_pt_eq pt_eq).inv ≫ P.ring_hom_ = Q.ring_hom_)
+
 @[refl] lemma equiv_self : P.equiv P :=
 { pt_eq := rfl,
   ring_hom_eq := 
@@ -185,7 +189,7 @@ end point_stalk_ring_hom_pair
 
 section affine
 
-variables [is_affine X]
+variables {X R} [is_affine X]
 
 def from_point_stalk_ring_hom_pair_of_affine (P : point_stalk_ring_hom_pair X R) :
   Spec_obj R ⟶ X :=
@@ -193,12 +197,31 @@ def from_point_stalk_ring_hom_pair_of_affine (P : point_stalk_ring_hom_pair X R)
   local_ring.from_point_local_ring_hom_pair 
   { pt := X.iso_Spec.hom.1.base P.pt,
     localized_ring := X.presheaf.stalk P.pt,
-    comm_ring_localized_ring := infer_instance,
     algebra_localized_ring := infer_instance,
     is_localization := infer_instance,
     ring_hom_ := P.stalk_iso.inv ≫ P.ring_hom_ 
-      ≫ (structure_sheaf.global_sections_iso R).hom,
+      ≫ (structure_sheaf.global_sections_iso R.α).hom,
     is_local_ring_hom_ := infer_instance }
+
+lemma from_point_stalk_ring_hom_pair_of_affine.resp_equiv
+  (P Q : point_stalk_ring_hom_pair X R) (h : P.equiv Q) :
+  from_point_stalk_ring_hom_pair_of_affine P =
+  from_point_stalk_ring_hom_pair_of_affine Q :=
+begin
+  dsimp only [from_point_stalk_ring_hom_pair_of_affine],
+  congr' 1,
+  refine local_ring.from_point_local_ring_hom_pair.resp_equiv _,
+  fconstructor,
+  { dsimp only, rw h.pt_eq, },
+  { dsimp only, 
+    simp_rw h.ring_hom_eq, 
+    rw [point_stalk_ring_hom_pair.stalk_equiv_of_pt_eq_hom, category.assoc,
+      category.assoc, iso.inv_hom_id_assoc, category.assoc],
+    congr' 1,
+    -- use the fact they are both "colimit", so unique up to a **unique** 
+    -- isomorphism
+    sorry, },
+end
 
 @[simps]
 def to_point_stalk_ring_hom_pair_of_affine (α : Spec_obj R ⟶ X) :
@@ -232,6 +255,5 @@ let P := local_ring.to_point_local_ring_hom_pair
 end affine
 
 end Scheme
-
 
 end algebraic_geometry
