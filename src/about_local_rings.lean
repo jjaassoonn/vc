@@ -285,45 +285,64 @@ end ring_hom
 
 namespace local_ring
 
-variables (A R : CommRing.{u}) [local_ring R]
+section
 
-section new
+variables (A R : Type u) [comm_ring A] [comm_ring R] [local_ring R]
 
-variables (pt : prime_spectrum A)
+variables {A} (pt : prime_spectrum A)
 
-def target_local_ring_equiv (M : CommRing.{u}) 
+@[ext] structure local_ring_hom_ (M : Type u) [comm_ring M]
+  [algebra A M] [is_localization.at_prime M pt.as_ideal] :=
+(to_ring_hom : M →+* R)
+[to_ring_hom_is_local : is_local_ring_hom to_ring_hom]
+
+attribute [instance] local_ring_hom_.to_ring_hom_is_local
+attribute [instance] is_localization.at_prime.local_ring
+
+lemma local_ring_hom_.pt_eq {M : Type u} [comm_ring M] 
+  [algebra A M] [is_localization.at_prime M pt.as_ideal]
+  (g : local_ring_hom_ R pt M) :
+  (local_ring.maximal_ideal R).comap 
+    (g.to_ring_hom.comp $ algebra_map _ _ : A →+* R) = pt.as_ideal := 
+begin 
+  ext : 1,
+  rw [ideal.mem_comap, ring_hom.comp_apply],
+  split,
+  { intros h, 
+    contrapose! h,
+    rw ←is_localization.at_prime.to_map_mem_maximal_iff M pt.as_ideal at h,
+    rw [local_ring.mem_maximal_ideal, mem_nonunits_iff, not_not] at h ⊢,
+    exact is_unit.map _ h, },
+  { intros h0, 
+    refine map_nonunit g.to_ring_hom _ _,
+    rwa is_localization.at_prime.to_map_mem_maximal_iff _ pt.as_ideal, },
+end
+
+@[ext] structure ring_hom_ :=
+(to_ring_hom : A →+* R)
+(pt_eq : (local_ring.maximal_ideal R).comap to_ring_hom = pt.as_ideal)
+
+def local_ring_hom__equiv_ring_hom_ (M : Type  u) [comm_ring M] 
   [algebra A M] [is_localization.at_prime M pt.as_ideal] :
-    subtype (λ (g : M ⟶ R), is_local_ring_hom g) 
-  ≃ subtype (λ (f : A ⟶ R), (local_ring.maximal_ideal R).comap f = pt.as_ideal) :=
-{ to_fun := λ g, ⟨algebra_map _ _ ≫ g.1, 
-  begin 
-    haveI := g.2,
-    haveI : local_ring M := is_localization.at_prime.local_ring M pt.as_ideal,
-    ext : 1,
-    rw [ideal.mem_comap, comp_apply],
-    split,
-    { intros h, 
-      contrapose! h,
-      rw ←is_localization.at_prime.to_map_mem_maximal_iff M pt.as_ideal at h,
-      rw [local_ring.mem_maximal_ideal, mem_nonunits_iff, not_not] at h ⊢,
-      exact is_unit.map _ h, },
-    { intros h0, apply map_nonunit g.1,
-      rwa is_localization.at_prime.to_map_mem_maximal_iff _ pt.as_ideal, },
-  end⟩,
-  inv_fun := λ f, ⟨@@ring_hom.fac' _ _ _ f.1 M _ _ 
-    (by { simp_rw f.2, apply_instance }), infer_instance⟩,
-  left_inv := λ ⟨g, hg⟩, 
+  local_ring_hom_ R pt M ≃ ring_hom_ R pt :=
+{ to_fun := λ g, ⟨g.1.comp $ algebra_map _ _, g.pt_eq _ _⟩,
+  inv_fun := λ f, 
+  { to_ring_hom :=  @@ring_hom.fac' _ _ _ f.1 M _ _ 
+    (by { simp_rw f.2, apply_instance }),
+    to_ring_hom_is_local := infer_instance },
+  left_inv := λ g, 
   begin
+    rcases g with ⟨g, hg⟩,
     resetI,
-    rw subtype.ext_iff_val, 
+    ext,
+    -- rw subtype.ext_iff_val, 
     dsimp only,
-    ext : 1,
     obtain ⟨a, b, rfl⟩ := is_localization.mk'_surjective _ x,
     rw [is_localization.lift_mk'], symmetry,
     rw [units.eq_mul_inv_iff_mul_eq],
     change _ * (g _) = _,
     dsimp,
-    rw [←map_mul, comp_apply],
+    rw [←map_mul],
     congr' 1,
     rw [←is_localization.mk'_one M, ←is_localization.mk'_one M,
       ←is_localization.mk'_mul, mul_one, is_localization.eq],
@@ -332,13 +351,17 @@ def target_local_ring_equiv (M : CommRing.{u})
   end,
   right_inv := λ ⟨f, eq1⟩, 
   begin 
-    rw subtype.ext_iff_val, dsimp only,
-    haveI : is_localization.at_prime ↥M (ideal.comap f (maximal_ideal ↥R)),
+    ext : 1, dsimp only,
+    haveI : is_localization.at_prime M (ideal.comap f (maximal_ideal R)),
     { simp_rw eq1, apply_instance },
     exact ring_hom.fac'_comp_algebra_map f M,
   end }
 
-end new
+end
+
+section
+
+variables (A R : CommRing.{u}) [local_ring R]
 
 @[ext] structure point_local_ring_hom_pair :=
 (pt : prime_spectrum A)
@@ -658,5 +681,7 @@ lemma to_from_point_local_ring_hom_pair (P : point_local_ring_hom_pair A R) :
   (to_point_local_ring_hom_pair (from_point_local_ring_hom_pair P)).equiv P := 
 from_point_local_ring_hom_pair.almost_injective 
   (from_to_point_local_ring_hom_pair _)
+
+end
 
 end local_ring
