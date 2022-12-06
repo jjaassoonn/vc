@@ -285,7 +285,60 @@ end ring_hom
 
 namespace local_ring
 
-variables (A R : CommRing.{u}) [local_ring R] 
+variables (A R : CommRing.{u}) [local_ring R]
+
+section new
+
+variables (pt : prime_spectrum A)
+
+def target_local_ring_equiv (M : CommRing.{u}) 
+  [algebra A M] [is_localization.at_prime M pt.as_ideal] :
+    subtype (λ (g : M ⟶ R), is_local_ring_hom g) 
+  ≃ subtype (λ (f : A ⟶ R), (local_ring.maximal_ideal R).comap f = pt.as_ideal) :=
+{ to_fun := λ g, ⟨algebra_map _ _ ≫ g.1, 
+  begin 
+    haveI := g.2,
+    haveI : local_ring M := is_localization.at_prime.local_ring M pt.as_ideal,
+    ext : 1,
+    rw [ideal.mem_comap, comp_apply],
+    split,
+    { intros h, 
+      contrapose! h,
+      rw ←is_localization.at_prime.to_map_mem_maximal_iff M pt.as_ideal at h,
+      rw [local_ring.mem_maximal_ideal, mem_nonunits_iff, not_not] at h ⊢,
+      exact is_unit.map _ h, },
+    { intros h0, apply map_nonunit g.1,
+      rwa is_localization.at_prime.to_map_mem_maximal_iff _ pt.as_ideal, },
+  end⟩,
+  inv_fun := λ f, ⟨@@ring_hom.fac' _ _ _ f.1 M _ _ 
+    (by { simp_rw f.2, apply_instance }), infer_instance⟩,
+  left_inv := λ ⟨g, hg⟩, 
+  begin
+    resetI,
+    rw subtype.ext_iff_val, 
+    dsimp only,
+    ext : 1,
+    obtain ⟨a, b, rfl⟩ := is_localization.mk'_surjective _ x,
+    rw [is_localization.lift_mk'], symmetry,
+    rw [units.eq_mul_inv_iff_mul_eq],
+    change _ * (g _) = _,
+    dsimp,
+    rw [←map_mul, comp_apply],
+    congr' 1,
+    rw [←is_localization.mk'_one M, ←is_localization.mk'_one M,
+      ←is_localization.mk'_mul, mul_one, is_localization.eq],
+    refine ⟨1, _⟩,
+    simp only [submonoid.coe_one, one_mul, mul_one],
+  end,
+  right_inv := λ ⟨f, eq1⟩, 
+  begin 
+    rw subtype.ext_iff_val, dsimp only,
+    haveI : is_localization.at_prime ↥M (ideal.comap f (maximal_ideal ↥R)),
+    { simp_rw eq1, apply_instance },
+    exact ring_hom.fac'_comp_algebra_map f M,
+  end }
+
+end new
 
 @[ext] structure point_local_ring_hom_pair :=
 (pt : prime_spectrum A)

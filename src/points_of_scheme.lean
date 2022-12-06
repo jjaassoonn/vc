@@ -16,6 +16,119 @@ namespace Scheme
 
 variables (X : Scheme.{u}) (R : CommRing.{u}) [local_ring R]
 
+structure point_affine_open_stalk_ring_hom_triple :=
+(pt : X.carrier)
+(aopen : opens X.carrier)
+(mem_aopen : pt ∈ aopen)
+(aopen_is_affine : is_affine_open aopen)
+(ring_hom_ : X.stalk pt ⟶ R)
+[ring_hom_local : is_local_ring_hom ring_hom_]
+
+namespace point_affine_open_stalk_ring_hom_triple
+
+variables (P Q : point_affine_open_stalk_ring_hom_triple X R)
+
+local notation X `|_` P := (X.restrict (P.aopen.open_embedding) : Scheme)
+
+instance is_affine_restrict : is_affine $ X |_ P :=
+P.aopen_is_affine
+
+variables {X R}
+
+structure refine : Prop :=
+(subset : P.aopen ≤ Q.aopen)
+(pt_eq : P.pt = Q.pt)
+(ring_hom_eq : stalk_specializes X.presheaf (by rw pt_eq) ≫ P.ring_hom_ = Q.ring_hom_)
+
+def restrict_stalk_iso : (X |_ P).stalk ⟨P.pt, P.mem_aopen⟩  ≅ X.stalk P.pt:=
+PresheafedSpace.restrict_stalk_iso X.to_PresheafedSpace 
+  (P.aopen.open_embedding) ⟨P.pt, _⟩
+
+def restrict_Γ_iso : (Γ.obj $ op $ X |_ P) ≅ X.presheaf.obj (op P.aopen) :=
+{ hom := X.presheaf.map $ (hom_of_le 
+    begin 
+      rintros x (hx : x ∈ P.aopen),
+      refine ⟨⟨x, hx⟩, ⟨⟩, rfl⟩,
+    end : P.aopen ⟶ ((_ : is_open_map _).functor.obj ⊤)).op,
+  inv := X.presheaf.map $ (hom_of_le
+    begin
+      rintros _ ⟨x, -, rfl⟩,
+      exact x.2,
+    end : (_ : is_open_map _).functor.obj ⊤ ⟶ P.aopen).op,
+  hom_inv_id' := by erw [←X.presheaf.map_comp, X.presheaf.map_id]; refl,
+  inv_hom_id' := by erw [←X.presheaf.map_comp, X.presheaf.map_id]; refl }
+
+def to_Spec_local_ring_to_Scheme_restrict : Spec_obj R ⟶ X.restrict P.aopen.open_embedding :=
+(hom.target_AffineScheme (Spec_obj R) _).symm $ 
+    (P.restrict_Γ_iso.hom ≫ germ _ ⟨P.pt, P.mem_aopen⟩ ≫ P.ring_hom_ : Γ.obj (op $ X |_ P) ⟶ R) 
+  ≫ (structure_sheaf.global_sections_iso R).hom
+
+def to_Spec_local_ring_to_Scheme : Spec_obj R ⟶ X :=
+P.to_Spec_local_ring_to_Scheme_restrict ≫ X.of_restrict _
+
+section refine
+
+variables (P Q) 
+
+@[reducible] def restrict_of_refine (h : P.refine Q) : (X |_ P) ⟶ (X |_ Q) :=
+is_open_immersion.lift 
+  (X.of_restrict Q.aopen.open_embedding) 
+  (X.of_restrict P.aopen.open_embedding)
+begin
+  rintros _ ⟨⟨x, hx⟩, rfl⟩,
+  refine ⟨⟨x, h.subset hx⟩, rfl⟩,
+end
+
+@[reducible] def restrict_of_refine' (h : P.refine Q) : (X |_ P) ⟶ (X |_ Q) :=
+(hom.target_AffineScheme (X |_ P) (X |_ Q)).symm $ 
+X.presheaf.map $ (hom_of_le
+  begin
+    rintros _ ⟨⟨x, hx⟩, -, rfl⟩,
+    refine ⟨⟨x, h.subset hx⟩, ⟨⟩, rfl⟩,
+  end : (_ : is_open_map _).functor.obj ⊤ ⟶ (_ : is_open_map _).functor.obj ⊤).op
+
+example (h : P.refine Q) : 
+  P.restrict_of_refine' _ h =
+  P.restrict_of_refine _ h :=
+begin 
+  dsimp only [restrict_of_refine, restrict_of_refine'],
+  refine is_open_immersion.lift_uniq _ _ _ _ _,
+  sorry
+end
+
+
+lemma restrict_of_refine_comp_of_restrict (h : P.refine Q) : 
+  X.of_restrict (P.aopen.open_embedding) =
+  P.restrict_of_refine _ h ≫ X.of_restrict _ :=
+by rw is_open_immersion.lift_fac
+
+/--
+Spec R ⟶ X | P
+    \       ↓
+      --> X | Q
+-/
+lemma to_Spec_local_ring_to_Scheme_restrict_eq_of_refine (h : P.refine Q) :
+  Q.to_Spec_local_ring_to_Scheme_restrict =
+  P.to_Spec_local_ring_to_Scheme_restrict ≫ restrict_of_refine _ _ h :=
+begin
+  dsimp only [to_Spec_local_ring_to_Scheme_restrict],
+  -- haveI : is_open_immersion (P.restrict_of_refine Q h) := sorry,
+  -- have := is_open_immersion.lift_fac
+  --   (restrict_of_refine _ _ h) (Q.to_Spec_local_ring_to_Scheme_restrict),
+end
+
+def to_Spec_local_ring_to_Scheme.resp_refine (h : P.refine Q) :
+  P.to_Spec_local_ring_to_Scheme = Q.to_Spec_local_ring_to_Scheme :=
+begin 
+  dsimp [to_Spec_local_ring_to_Scheme],
+  rw [restrict_of_refine_comp_of_restrict _ _ h, ←category.assoc],
+  congr' 1,
+end
+
+end refine
+
+end point_affine_open_stalk_ring_hom_triple
+
 structure point_stalk_ring_hom_pair :=
 (pt : X.carrier)
 (stalk_ : CommRing.{u})
