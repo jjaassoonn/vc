@@ -15,25 +15,6 @@ open category_theory category_theory.limits
 open topological_space
 open opposite
 
-namespace Top.presheaf
-
-universes u v
-
-variables {C : Type u} [category.{v} C] [has_colimits C] {X : Top.{v}}
-
-lemma stalk_specializes_eq_to_hom (F : Top.presheaf C X) {x y : X} (h : x = y) :
-  stalk_specializes F (by rw h : x ⤳ y) = eq_to_hom (by rw h) :=
-begin 
-  subst h,
-  rw [eq_to_hom_refl],
-  apply stalk_hom_ext,
-  intros U h,
-  erw [germ_stalk_specializes, category.comp_id],
-  refl,
-end
-
-end Top.presheaf
-
 namespace algebraic_geometry
 
 universe u
