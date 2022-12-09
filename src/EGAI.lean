@@ -115,6 +115,9 @@ def Spec_stalk_to_restrict
   (Spec_obj $ Y.stalk y) ⟶ Y.restrict V.open_embedding :=
 Spec_map (sections_to_stalk_restrict hV mem_) ≫ hV.iso_Spec.inv
 
+section
+
+variable (y)
 def Spec_stalk_to_self :
   (Spec_obj $ Y.stalk y) ⟶ Y :=
 Spec_stalk_to_restrict 
@@ -129,6 +132,8 @@ end
 begin 
   refine (Y.2 y).some.2,
 end ≫ Scheme.of_restrict _ _
+
+end
 
 namespace Spec_stalk_to_self_independence_proof
 
@@ -309,6 +314,12 @@ begin
 end
 
 end Spec_stalk_to_self_independence_proof
+
+lemma Spec_stalk_to_self_on_affine_open {V : opens Y.carrier}
+  (hV : is_affine_open V) (mem_ : y ∈ V) :
+  Spec_stalk_to_self y = 
+  Spec_stalk_to_restrict hV mem_ ≫ Y.of_restrict _ :=
+Spec_stalk_to_self_independence_proof.independent _ _ _ _
 
 end
 
