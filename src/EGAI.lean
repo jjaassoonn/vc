@@ -6,6 +6,7 @@ import algebraic_geometry.AffineScheme
 -- imports from mathlib
 
 import about_local_rings
+import target_affine_scheme
 -- imports from this repo
 
 noncomputable theory
@@ -30,35 +31,14 @@ def _root_.algebraic_geometry.is_affine_open.iso_Spec
   Y.restrict V.open_embedding ≅ _ :=
 @Scheme.iso_Spec _ hV
 
-def _root_.algebraic_geometry.is_affine_open.stalk_iso
-  {V : opens Y.carrier} (hV : is_affine_open V)
-  (y : Y.carrier) (mem_ : y ∈ V) :
-  (Y.restrict V.open_embedding).stalk ⟨y, mem_⟩ ≅ 
-  CommRing.of 
-    (localization.at_prime ((hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal : 
-      ideal $ Γ.obj $ op $ Y.restrict V.open_embedding)) :=
-let i1 : (Y.restrict V.open_embedding).to_PresheafedSpace ≅
-  Spec.to_PresheafedSpace.obj (op $ Γ.obj $ op $ Y.restrict V.open_embedding) :=
-  { hom := hV.iso_Spec.hom.1,
-    inv := hV.iso_Spec.inv.1,
-    hom_inv_id' := by erw [←Scheme.comp_val, iso.hom_inv_id]; refl,
-    inv_hom_id' := by erw [←Scheme.comp_val, iso.inv_hom_id]; refl } in
-PresheafedSpace.stalk_iso _ _ i1 ⟨y, mem_⟩ ≪≫ 
-  structure_sheaf.stalk_iso _ _
-
 instance restrict_stalk_is_local 
   (V : opens Y.carrier) (hV : is_affine_open V) (mem_ : y ∈ V) :
   local_ring ((Y.restrict V.open_embedding).stalk ⟨y, mem_⟩) :=
 @local_ring.of_equiv _ 
   (localization.at_prime ((hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal : 
     ideal $ Γ.obj $ op $ Y.restrict V.open_embedding)) _ _ _ $
-  let i := hV.stalk_iso y mem_ in
-  { to_fun := i.hom,
-    inv_fun := i.inv,
-    left_inv := λ x, by rw [iso.hom_inv_id_apply],
-    right_inv := λ x, by rw [iso.inv_hom_id_apply],
-    map_mul' := map_mul _,
-    map_add' := map_add _ }
+@@Scheme.stalk_iso_of_affine' (Y.restrict $ V.open_embedding)
+  hV ⟨y, mem_⟩
 
 instance stalk_is_local : local_ring (Y.stalk y) :=
 begin 
@@ -371,122 +351,63 @@ lemma Spec_stalk_to_self_on_affine_open {V : opens Y.carrier}
   Spec_stalk_to_restrict hV mem_ ≫ Y.of_restrict _ :=
 Spec_stalk_to_self_independence_proof.independent _ _ _ _
 
-def _root_.algebraic_geometry.is_affine_open.algebra_restrict {V : opens Y.carrier}
-  (hV : is_affine_open V) (mem_ : y ∈ V) :
-  algebra (Γ.obj $ op $ Y.restrict V.open_embedding) 
-  ((Y.restrict V.open_embedding).stalk ⟨y, mem_⟩) :=
-ring_hom.to_algebra $ sections_to_stalk_restrict_aux hV mem_
-
-def _root_.algebraic_geometry.is_affine_open.alg_equiv_restrict {V : opens Y.carrier}
-  (hV : is_affine_open V) (mem_ : y ∈ V) :
-  @@alg_equiv 
-    (Γ.obj $ op $ Y.restrict V.open_embedding)
-    (localization.at_prime (hV.iso_Spec.hom.val.base ⟨y, mem_⟩).as_ideal)
-    ((Y.restrict V.open_embedding).stalk ⟨y, mem_⟩) _ _ _
-    (@@localization.algebra _ _ $ algebra.id _) (hV.algebra_restrict mem_) := 
-{ to_fun := (hV.stalk_iso y mem_).inv,
-  inv_fun := (hV.stalk_iso y mem_).hom,
-  left_inv := λ x, iso.inv_hom_id_apply _ x,
-  right_inv := λ x, iso.hom_inv_id_apply _ x,
-  map_mul' := map_mul _,
-  map_add' := map_add _,
-  commutes' := λ r, 
-  begin 
-    rw ring_hom.algebra_map_to_algebra,
-    rw sections_to_stalk_restrict_aux,
-    apply_fun (hV.stalk_iso y mem_).hom,
-    swap, exact concrete_category.injective_of_mono_of_preserves_pullback _,
-    rw iso.inv_hom_id_apply _,
-    rw [←comp_apply],
-    rw [is_affine_open.stalk_iso, iso.trans_hom, PresheafedSpace.stalk_iso_hom,
-      category.assoc, Top.presheaf.germ_stalk_specializes'_assoc],
-    dsimp only,
-    erw PresheafedSpace.stalk_map_germ_assoc hV.iso_Spec.inv.val ⊤
-      ⟨hV.iso_Spec.hom.val.base ⟨y, mem_⟩, ⟨⟩⟩,
-    rw structure_sheaf.stalk_iso_hom,
-    erw structure_sheaf.germ_comp_stalk_to_fiber_ring_hom,
-    dsimp only [unop_op, subtype.coe_mk],
-    rw [comp_apply, structure_sheaf.coe_open_to_localization],
-    dsimp only,
-    dsimp only [is_affine_open.iso_Spec],
-    sorry
-  end }
-
-instance is_affine_open.is_localization_restrict {V : opens Y.carrier}
-  (hV : is_affine_open V) (mem_ : y ∈ V) :
+example -- is_affine_open.is_localization_restrict 
+  {V : opens Y.carrier} (hV : is_affine_open V) (mem_ : y ∈ V) :
   @@is_localization.at_prime _ ((Y.restrict V.open_embedding).stalk ⟨y, mem_⟩) _
-    (hV.algebra_restrict mem_)
+    (@algebraic_geometry.Scheme.global_sections_algebra' _ hV ⟨y, mem_⟩)
     (hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal _ :=
-begin 
-  have := @@is_localization.is_localization_of_alg_equiv _ _ _ _ _ _
-    localization.is_localization _,
-  refine this,
-  exact hV.alg_equiv_restrict mem_,
-end
+@algebraic_geometry.Scheme.stalk_is_localization' (Y.restrict V.open_embedding) hV ⟨y, mem_⟩
 
 instance is_affine_open.algebra {V : opens Y.carrier}
   (hV : is_affine_open V) (mem_ : y ∈ V) :
   algebra (Γ.obj $ op $ Y.restrict V.open_embedding) (Y.stalk y) :=
 ring_hom.to_algebra $ sections_to_stalk_restrict hV mem_
 
-instance is_affine_open.is_localization {V : opens Y.carrier}
-  (hV : is_affine_open V) (mem_ : y ∈ V) :
-  @@is_localization.at_prime _ (Y.stalk y) _
-    (algebraic_geometry.Scheme.is_affine_open.algebra hV mem_)
-    (hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal _ := 
-begin
-  have := @@is_localization.is_localization_of_alg_equiv _ _ _ _ _ _
-    localization.is_localization _,
-  refine this,
-  refine { to_fun := _, inv_fun := _, left_inv := _, right_inv := _, 
-    map_mul' := _, map_add' := _, commutes' := _ },
-  { -- to_fun
-    refine λ x, (Y.1.restrict_stalk_iso V.open_embedding ⟨y, mem_⟩).hom $
-      (hV.stalk_iso _ _).inv x,
-   },
-  { -- inv_fun
-    refine λ x, (hV.stalk_iso _ mem_).hom $ 
-      (Y.1.restrict_stalk_iso V.open_embedding ⟨y, mem_⟩).inv x,
-   },
-  { -- left inverse
-    sorry },
-  { -- right_inverse 
-    sorry },
-  { -- map_mul,
-    intros, simp only [map_mul], },
-  { -- map_add,
-    intros, simp only [map_add] },
-  { -- commutes,
-    intros r,
-    rw [←comp_apply, is_affine_open.stalk_iso, iso.trans_inv, PresheafedSpace.stalk_iso_inv],
-    rw [ring_hom.algebra_map_to_algebra, sections_to_stalk_restrict, sections_to_stalk_restrict_aux],
-    erw PresheafedSpace.restrict_stalk_iso_hom_eq_germ,
-    dsimp only [unop_op],
-    simp only [category.assoc],
-    rw [comp_apply, structure_sheaf.stalk_iso_inv, 
-      ←localization.mk_one_eq_algebra_map, localization.mk_eq_mk',
-      structure_sheaf.localization_to_stalk_mk'],
-    dsimp only [submonoid.coe_one],
-    erw ←structure_sheaf.to_open_eq_const,
-    rw structure_sheaf.germ_to_open,
-    rw [←comp_apply],
-    dsimp only [structure_sheaf.to_stalk],
-    rw [category.assoc], -- ←category.assoc (Top.presheaf.germ _ _)],
-    congr' 1, symmetry,
-    rw [←category.assoc, ←category.assoc],
-    erw ←iso.comp_inv_eq,
-    rw PresheafedSpace.restrict_stalk_iso_inv_eq_germ,
-    rw [category.assoc],
-    dsimp,
-    have := PresheafedSpace.stalk_map_germ hV.iso_Spec.hom.1 ⊤ ⟨⟨y, mem_⟩, ⟨⟩⟩,
-    erw this,
-    rw [←category.assoc],
-    rw structure_sheaf.to_global_factors,
-    
-    -- rw PresheafedSpace.restrict_sta
-    -- rw PresheafedSpace.stalk_map.stalk_map_germ,
-     }
-end
+-- Do I even need this?
+-- instance is_affine_open.is_localization {V : opens Y.carrier}
+--   (hV : is_affine_open V) (mem_ : y ∈ V) :
+--   @@is_localization.at_prime _ (Y.stalk y) _
+--     (algebraic_geometry.Scheme.is_affine_open.algebra hV mem_)
+--     (hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal _ := 
+-- begin
+--   have := @@is_localization.is_localization_of_alg_equiv _ _ _ _ _ _
+--     _ _,
+--   refine this,
+--   work_on_goal 4 
+--   { exact @algebraic_geometry.Scheme.stalk_is_localization' 
+--       (Y.restrict V.open_embedding) hV ⟨y, mem_⟩ },
+--   refine { to_fun := _, inv_fun := _, left_inv := _, right_inv := _, 
+--     map_mul' := _, map_add' := _, commutes' := _ },
+--   { -- to_fun
+--     refine (Y.1.restrict_stalk_iso V.open_embedding ⟨y, mem_⟩).hom,
+--    },
+--   { -- inv_fun
+--     refine (Y.1.restrict_stalk_iso V.open_embedding ⟨y, mem_⟩).inv,
+--    },
+--   { -- left inverse
+--     sorry },
+--   { -- right_inverse 
+--     sorry },
+--   { -- map_mul,
+--     intros, simp only [map_mul], },
+--   { -- map_add,
+--     intros, simp only [map_add] },
+--   { -- commutes,
+--     intros r,
+--     rw [ring_hom.algebra_map_to_algebra, ring_hom.algebra_map_to_algebra],
+--     rw [ring_hom.comp_apply],
+--     apply_fun (Y.1.restrict_stalk_iso V.open_embedding ⟨y, mem_⟩).inv,
+--     swap, exact concrete_category.injective_of_mono_of_preserves_pullback _,
+--     rw iso.hom_inv_id_apply,
+--     erw Scheme.stalk_iso_of_affine'_symm_apply,
+--     rw [←localization.mk_one_eq_algebra_map, localization.mk_eq_mk'],
+--     erw structure_sheaf.localization_to_stalk_mk',
+--     simp_rw submonoid.coe_one,
+--     erw ←structure_sheaf.to_open_eq_const,
+--     erw structure_sheaf.germ_to_open,
+--     sorry
+--      }
+-- end
 
 end
 
