@@ -43,8 +43,8 @@ let i1 : (Y.restrict V.open_embedding).to_PresheafedSpace ≅
     inv := hV.iso_Spec.inv.1,
     hom_inv_id' := by erw [←Scheme.comp_val, iso.hom_inv_id]; refl,
     inv_hom_id' := by erw [←Scheme.comp_val, iso.inv_hom_id]; refl } in
-(PresheafedSpace.stalk_map.stalk_iso i1 ⟨y, mem_⟩).symm.trans $ 
-structure_sheaf.stalk_iso _ _
+PresheafedSpace.stalk_iso _ _ i1 ⟨y, mem_⟩ ≪≫ 
+  structure_sheaf.stalk_iso _ _
 
 instance restrict_stalk_is_local 
   (V : opens Y.carrier) (hV : is_affine_open V) (mem_ : y ∈ V) :
@@ -84,6 +84,75 @@ def sections_to_stalk_restrict_aux
   (Y.restrict V.open_embedding).stalk ⟨y, mem_⟩ :=
 Top.presheaf.germ (Y.restrict V.open_embedding).presheaf 
   ⟨⟨y, mem_⟩, by tauto⟩
+
+section
+
+-- lemma sections_to_stalk_restrict_aux.eq
+--   {V : opens Y.carrier} (hV : is_affine_open V) (mem_ : y ∈ V) :
+--   sections_to_stalk_restrict_aux hV mem_ = 
+--   begin 
+--     have := algebra_map _ _,
+--     refine this,
+--     dsimp,
+--     exact localization.algebra,
+--   end ≫ (hV.stalk_iso y mem_).inv :=
+-- begin 
+--   symmetry,
+--   rw iso.comp_inv_eq,
+--   dsimp only [sections_to_stalk_restrict_aux, is_affine_open.stalk_iso],
+--   rw iso.trans_hom,
+--   dsimp only [unop_op],
+--   rw PresheafedSpace.stalk_iso_hom,
+--   dsimp only,
+--   rw [category.assoc],
+ 
+-- end
+
+-- lemma sections_to_stalk_restrict_aux.lemma1
+--   {V : opens Y.carrier} (hV : is_affine_open V) (mem_ : y ∈ V) 
+--   (z : Γ.obj (op $ Y.restrict V.open_embedding)) :
+--   (sections_to_stalk_restrict_aux hV mem_ z) = 
+--   (hV.stalk_iso y mem_).inv (localization.mk z 1) :=
+-- begin
+--   rw [is_affine_open.stalk_iso], 
+--   dsimp only, 
+--   rw [iso.trans_inv],
+--   dsimp only [unop_op],
+--   rw structure_sheaf.stalk_iso_inv,
+--   rw comp_apply,
+--   rw localization.mk_eq_mk',
+--   rw structure_sheaf.localization_to_stalk_mk',
+--   rw PresheafedSpace.stalk_iso_inv,
+--   erw ←structure_sheaf.to_open_eq_const,
+--   rw structure_sheaf.germ_to_open,
+--   dsimp,
+--   rw ←structure_sheaf.germ_to_top,
+--   have := PresheafedSpace.stalk_map_germ_apply,
+-- end
+
+-- lemma sections_to_stalk_restrict_aux.is_unit_of_mem_prime_compl
+--   {V : opens Y.carrier} (hV : is_affine_open V) (mem_ : y ∈ V) 
+--   {z : Γ.obj (op $ Y.restrict V.open_embedding)} 
+--   (hz : z ∈ (hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal.prime_compl) : 
+--   is_unit (sections_to_stalk_restrict_aux hV mem_ z) :=
+-- begin
+--   have := structure_sheaf.is_unit_to_stalk _ _ ⟨z, hz⟩,
+--   dsimp [subtype.coe_mk] at this,
+-- end
+-- is_unit_of_mul_eq_one _ ((hV.stalk_iso y mem_).inv (localization.mk 1 ⟨z, hz⟩)) 
+-- begin 
+--   dsimp [sections_to_stalk_restrict_aux, is_affine_open.stalk_iso],
+--   rw [comp_apply, localization.mk_eq_mk', structure_sheaf.localization_to_stalk_mk'],
+--   -- erw PresheafedSpace.stalk_iso_hom,
+-- end
+
+-- lemma sections_to_stalk_restrict_aux.is_unit_iff
+--   {V : opens Y.carrier} (hV : is_affine_open V) (mem_ : y ∈ V) (z) : 
+--   is_unit (sections_to_stalk_restrict_aux hV mem_ z) ↔
+--   z ∈ (hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal.prime_compl :=
+-- sorry
+
+end
 
 def sections_to_stalk_restrict
   {V : opens Y.carrier} (hV : is_affine_open V) (mem_ : y ∈ V) : 
@@ -301,6 +370,70 @@ lemma Spec_stalk_to_self_on_affine_open {V : opens Y.carrier}
   Spec_stalk_to_self y = 
   Spec_stalk_to_restrict hV mem_ ≫ Y.of_restrict _ :=
 Spec_stalk_to_self_independence_proof.independent _ _ _ _
+
+instance is_affine_open.algebra {V : opens Y.carrier}
+  (hV : is_affine_open V) (mem_ : y ∈ V) :
+  algebra (Γ.obj $ op $ Y.restrict V.open_embedding) (Y.stalk y) :=
+ring_hom.to_algebra $ sections_to_stalk_restrict hV mem_
+
+instance is_affine_open.is_localization {V : opens Y.carrier}
+  (hV : is_affine_open V) (mem_ : y ∈ V) :
+  @@is_localization.at_prime _ (Y.stalk y) _
+    (algebraic_geometry.Scheme.is_affine_open.algebra hV mem_)
+    (hV.iso_Spec.hom.1.base ⟨y, mem_⟩).as_ideal _ := 
+begin
+  have := @@is_localization.is_localization_of_alg_equiv _ _ _ _ _ _
+    localization.is_localization _,
+  refine this,
+  refine { to_fun := _, inv_fun := _, left_inv := _, right_inv := _, 
+    map_mul' := _, map_add' := _, commutes' := _ },
+  { -- to_fun
+    refine λ x, (Y.1.restrict_stalk_iso V.open_embedding ⟨y, mem_⟩).hom $
+      (hV.stalk_iso _ _).inv x,
+   },
+  { -- inv_fun
+    refine λ x, (hV.stalk_iso _ mem_).hom $ 
+      (Y.1.restrict_stalk_iso V.open_embedding ⟨y, mem_⟩).inv x,
+   },
+  { -- left inverse
+    sorry },
+  { -- right_inverse 
+    sorry },
+  { -- map_mul,
+    intros, simp only [map_mul], },
+  { -- map_add,
+    intros, simp only [map_add] },
+  { -- commutes,
+    intros r,
+    rw [←comp_apply, is_affine_open.stalk_iso, iso.trans_inv, PresheafedSpace.stalk_iso_inv],
+    rw [ring_hom.algebra_map_to_algebra, sections_to_stalk_restrict, sections_to_stalk_restrict_aux],
+    erw PresheafedSpace.restrict_stalk_iso_hom_eq_germ,
+    dsimp only [unop_op],
+    simp only [category.assoc],
+    rw [comp_apply, structure_sheaf.stalk_iso_inv, 
+      ←localization.mk_one_eq_algebra_map, localization.mk_eq_mk',
+      structure_sheaf.localization_to_stalk_mk'],
+    dsimp only [submonoid.coe_one],
+    erw ←structure_sheaf.to_open_eq_const,
+    rw structure_sheaf.germ_to_open,
+    rw [←comp_apply],
+    dsimp only [structure_sheaf.to_stalk],
+    rw [category.assoc], -- ←category.assoc (Top.presheaf.germ _ _)],
+    congr' 1, symmetry,
+    rw [←category.assoc, ←category.assoc],
+    erw ←iso.comp_inv_eq,
+    rw PresheafedSpace.restrict_stalk_iso_inv_eq_germ,
+    rw [category.assoc],
+    dsimp,
+    have := PresheafedSpace.stalk_map_germ hV.iso_Spec.hom.1 ⊤ ⟨⟨y, mem_⟩, ⟨⟩⟩,
+    erw this,
+    rw [←category.assoc],
+    rw structure_sheaf.to_global_factors,
+    
+    -- rw PresheafedSpace.restrict_sta
+    -- rw PresheafedSpace.stalk_map.stalk_map_germ,
+     }
+end
 
 end
 
