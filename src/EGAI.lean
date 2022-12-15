@@ -363,7 +363,6 @@ example -- is_affine_open.is_localization_restrict
   eq_iff_exists := λ a b,
   begin 
     rw ring_hom.algebra_map_to_algebra,
-    -- delta sections_to_stalk_restrict_aux,
     split,
     { rintros h, sorry },
     { rintros ⟨⟨c, hc1⟩, (hc2 : a * c = b * c)⟩,
